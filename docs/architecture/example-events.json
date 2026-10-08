@@ -1,0 +1,36 @@
+[
+  {
+    "event_id": "20000000-0000-4000-8000-000000000001",
+    "organizer_id": "10000000-0000-4000-8000-000000000001",
+    "title": "Campus Coding Workshop",
+    "description": "Practice Python with other students.",
+    "image": null,
+    "category": "Technology",
+    "location": "University Center, Room 201",
+    "start_datetime": "2026-10-15T01:18:43.966311Z",
+    "end_datetime": "2026-10-15T03:18:43.966311Z",
+    "capacity": 30,
+    "status": "Published",
+    "created_at": "2026-10-08T01:18:43.966311Z",
+    "organizer_name": "Demo Organizer",
+    "registration_count": 1,
+    "remaining_capacity": 29
+  },
+  {
+    "event_id": "20000000-0000-4000-8000-000000000002",
+    "organizer_id": "10000000-0000-4000-8000-000000000001",
+    "title": "Full Event Demo",
+    "description": "Test the no-spaces-left message.",
+    "image": null,
+    "category": "Workshop",
+    "location": "Room 202",
+    "start_datetime": "2026-10-16T01:18:43.966311Z",
+    "end_datetime": "2026-10-16T02:18:43.966311Z",
+    "capacity": 1,
+    "status": "Published",
+    "created_at": "2026-10-08T01:18:43.966311Z",
+    "organizer_name": "Demo Organizer",
+    "registration_count": 1,
+    "remaining_capacity": 0
+  }
+]
