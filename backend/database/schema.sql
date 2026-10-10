@@ -1,7 +1,8 @@
+-- Repeatable bootstrap; use migrations for changes to existing columns/constraints.
 BEGIN;
 
 -- Store users. A user can organize events and attend events.
-CREATE TABLE public.users (
+CREATE TABLE IF NOT EXISTS public.users (
     user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL CHECK (length(trim(name)) > 0),
     email TEXT NOT NULL CHECK (length(trim(email)) > 0),
@@ -10,12 +11,12 @@ CREATE TABLE public.users (
 );
 
 -- Prevent duplicate emails, regardless of capitalization.
-CREATE UNIQUE INDEX users_email_unique
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique
 ON public.users (lower(email));
 
 
 -- Store event details and connect each event to its organizer.
-CREATE TABLE public.events (
+CREATE TABLE IF NOT EXISTS public.events (
     event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organizer_id UUID NOT NULL REFERENCES public.users(user_id),
     title TEXT NOT NULL CHECK (length(trim(title)) > 0),
@@ -36,18 +37,18 @@ CREATE TABLE public.events (
     CHECK (end_datetime > start_datetime)
 );
 
-CREATE INDEX events_organizer_idx
+CREATE INDEX IF NOT EXISTS events_organizer_idx
 ON public.events (organizer_id);
 
-CREATE INDEX events_discovery_idx
+CREATE INDEX IF NOT EXISTS events_discovery_idx
 ON public.events (status, start_datetime);
 
-CREATE INDEX events_category_idx
+CREATE INDEX IF NOT EXISTS events_category_idx
 ON public.events (category);
 
 
 -- Connect attendees to the events they register for.
-CREATE TABLE public.registrations (
+CREATE TABLE IF NOT EXISTS public.registrations (
     registration_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL
         REFERENCES public.events(event_id) ON DELETE CASCADE,
@@ -63,7 +64,7 @@ CREATE TABLE public.registrations (
         UNIQUE (event_id, user_id)
 );
 
-CREATE INDEX registrations_user_idx
+CREATE INDEX IF NOT EXISTS registrations_user_idx
 ON public.registrations (user_id);
 
 

@@ -1,4 +1,4 @@
-from data.repository import register_user
+from data.repository import DataError, register_user
 
 # IDs from our sample data.
 workshop_id = "20000000-0000-4000-8000-000000000001"
@@ -7,12 +7,12 @@ attendee_id = "10000000-0000-4000-8000-000000000002"
 second_attendee_id = "10000000-0000-4000-8000-000000000003"
 
 
-def check_rejection(label, event_id, user_id, expected_message):
+def check_rejection(label, event_id, user_id, expected_code):
     """Check that registration fails for the expected reason."""
     try:
         register_user(event_id, user_id)
-    except ValueError as error:
-        if str(error) == expected_message:
+    except DataError as error:
+        if error.code == expected_code:
             print(f"PASS: {label}")
         else:
             raise AssertionError(f"{label}: unexpected error: {error}") from error
@@ -25,7 +25,7 @@ check_rejection(
     "Duplicate registration blocked",
     workshop_id,
     attendee_id,
-    "User is already registered for this event.",
+    "ALREADY_REGISTERED",
 )
 
 # The full event already has its one available spot occupied.
@@ -33,5 +33,5 @@ check_rejection(
     "Full event registration blocked",
     full_event_id,
     second_attendee_id,
-    "This event is full.",
+    "EVENT_FULL",
 )

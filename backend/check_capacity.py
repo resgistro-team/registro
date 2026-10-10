@@ -3,7 +3,7 @@ from threading import Barrier
 from uuid import uuid4
 
 from data.db import connect
-from data.repository import register_user
+from data.repository import DataError, register_user
 
 event_id = uuid4()
 organizer_id = "10000000-0000-4000-8000-000000000001"
@@ -22,8 +22,8 @@ def try_registration(user_id):
     try:
         register_user(event_id, user_id)
         return "registered"
-    except ValueError as error:
-        if str(error) == "This event is full.":
+    except DataError as error:
+        if error.code == "EVENT_FULL":
             return "full"
         raise
 
