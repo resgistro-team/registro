@@ -2,6 +2,16 @@
 .env
 .env.*
 !.env.example
+.env*.local
+
+# Node & Frontend dependencies and builds
+node_modules/
+dist/
+dist-ssr/
+*.log
+
+# System files
+.DS_Store
 
 # Local Python environment and generated files
 .venv/
