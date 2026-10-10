@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from psycopg import sql
+from psycopg import errors, sql
 
 from .db import connect
 
@@ -16,14 +16,18 @@ class DataError(ValueError):
         self.message = message
 
 
-EVENT_SELECT = """
-    SELECT e.*, u.name AS organizer_name,
+# Split so other queries can prepend their own columns without string surgery.
+EVENT_COLUMNS = """
+    e.*, u.name AS organizer_name,
         (SELECT COUNT(*) FROM public.registrations r
          WHERE r.event_id = e.event_id
            AND r.registration_status = 'Registered') AS registration_count
+"""
+EVENT_FROM = """
     FROM public.events e
     JOIN public.users u ON u.user_id = e.organizer_id
 """
+EVENT_SELECT = "SELECT" + EVENT_COLUMNS + EVENT_FROM
 REQUIRED = {"title", "description", "location", "start_datetime", "end_datetime"}
 EDITABLE = REQUIRED | {"image", "category", "capacity", "status"}
 STATUSES = {"Draft", "Published", "Cancelled", "Completed"}
@@ -47,6 +51,13 @@ def _date(value, field):
     return value.astimezone(timezone.utc)
 
 
+def _text(value, field, required=True):
+    if value is None and not required:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        raise DataError("INVALID_INPUT", f"{field} must be nonempty text.")
+    return value.strip()
+
 def _fields(fields, current=None):
     if not fields or fields.keys() - EDITABLE:
         raise DataError("INVALID_INPUT", "Provide supported event fields only.")
@@ -55,9 +66,7 @@ def _fields(fields, current=None):
     fields = dict(fields)
     for name in ("title", "description", "location"):
         if name in fields:
-            if not isinstance(fields[name], str) or not fields[name].strip():
-                raise DataError("INVALID_INPUT", f"{name} must be nonempty text.")
-            fields[name] = fields[name].strip()
+            fields[name] = _text(fields[name], name)
     for name in ("image", "category"):
         if name in fields and fields[name] is not None and not isinstance(fields[name], str):
             raise DataError("INVALID_INPUT", f"{name} must be text or null.")
@@ -113,6 +122,60 @@ def _read_event(conn, event_id):
     return _event(conn.execute(EVENT_SELECT + " WHERE e.event_id = %s", (event_id,)).fetchone())
 
 
+def create_user(name, email, profile_image=None):
+    """Create a profile for the authentication integration. Email is unique, case-insensitive."""
+    name = _text(name, "name")
+    email = _text(email, "email")
+    if email.count("@") != 1 or email.startswith("@") or email.endswith("@"):
+        raise DataError("INVALID_INPUT", "email must contain a single @ with text on both sides.")
+    profile_image = _text(profile_image, "profile_image", required=False)
+    try:
+        with connect() as conn:
+            return conn.execute(
+                """INSERT INTO public.users (name, email, profile_image)
+                VALUES (%s, %s, %s) RETURNING *""",
+                (name, email, profile_image),
+            ).fetchone()
+    except errors.UniqueViolation:
+        raise DataError("EMAIL_TAKEN", "An account already uses this email.") from None
+
+
+def get_user(user_id):
+    """Look up one profile by ID."""
+    user_id = _id(user_id)
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM public.users WHERE user_id = %s", (user_id,)).fetchone()
+    if row is None:
+        raise DataError("USER_NOT_FOUND", "User not found.")
+    return row
+
+
+def find_user_by_email(email):
+    """Return the matching profile, or None. Case-insensitive; never raises for a miss."""
+    email = _text(email, "email")
+    with connect() as conn:
+        return conn.execute(
+            "SELECT * FROM public.users WHERE lower(email) = lower(%s)", (email,)
+        ).fetchone()
+
+
+def get_or_create_user(email, name, profile_image=None):
+    """Resolve a verified identity to a profile, creating it on first sign-in."""
+    existing = find_user_by_email(email)
+    if existing is not None:
+        return existing
+    try:
+        return create_user(name, email, profile_image)
+    except DataError as error:
+        # Another request created the same profile between the lookup and insert.
+        if error.code != "EMAIL_TAKEN":
+            raise
+        concurrent = find_user_by_email(email)
+        if concurrent is None:
+            raise
+        return concurrent
+
+
 def list_events():
     """Upcoming published events, in start-time order."""
     return search_events()
@@ -157,6 +220,18 @@ def get_event(event_id):
     return _event(row)
 
 
+def get_organizer_event(event_id, organizer_id):
+    """Owner-only lookup in any status, for edit forms that must load a Draft."""
+    event_id, organizer_id = _id(event_id), _id(organizer_id)
+    with connect() as conn:
+        row = conn.execute(EVENT_SELECT + " WHERE e.event_id = %s", (event_id,)).fetchone()
+    if row is None:
+        raise DataError("EVENT_NOT_FOUND", "Event not found.")
+    if row["organizer_id"] != organizer_id:
+        raise DataError("FORBIDDEN", "Only this event's organizer can manage it.")
+    return _event(row)
+
+
 def create_event(organizer_id, **fields):
     """Required fields: title, description, location, start_datetime, end_datetime."""
     organizer_id = _id(organizer_id)
@@ -184,6 +259,11 @@ def update_event(event_id, organizer_id, **fields):
             sql.SQL(", ").join(sql.SQL("{} = %s").format(sql.Identifier(key)) for key in fields)
         )
         conn.execute(statement, [*fields.values(), event_id])
+        # Cancelling an event cancels its registrations, so attendee and
+        # organizer lists stop reporting people as attending a dead event.
+        if fields.get("status") == "Cancelled" and current["status"] != "Cancelled":
+            conn.execute("""UPDATE public.registrations SET registration_status = 'Cancelled'
+                WHERE event_id = %s AND registration_status = 'Registered'""", (event_id,))
         row = _read_event(conn, event_id)
     return row
 
@@ -245,11 +325,14 @@ def list_user_registrations(user_id):
     user_id = _id(user_id)
     with connect() as conn:
         _user(conn, user_id)
-        query = EVENT_SELECT.replace(
-            "SELECT e.*", "SELECT mine.registration_id, mine.user_id AS attendee_id, "
-            "mine.registration_status, mine.registered_at, e.*"
-        ) + """ JOIN public.registrations mine ON mine.event_id = e.event_id
+        query = (
+            "SELECT mine.registration_id, mine.user_id AS attendee_id,"
+            " mine.registration_status, mine.registered_at,"
+            + EVENT_COLUMNS
+            + EVENT_FROM
+            + """ JOIN public.registrations mine ON mine.event_id = e.event_id
             WHERE mine.user_id = %s ORDER BY e.start_datetime, mine.registration_id"""
+        )
         results = conn.execute(query, (user_id,)).fetchall()
     rows = []
     for event in results:

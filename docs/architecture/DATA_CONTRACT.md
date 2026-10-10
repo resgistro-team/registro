@@ -44,6 +44,12 @@ See `example-events.json` for sample output.
 ## Team integration
 
 - Python connects to PostgreSQL using DATABASE_URL from backend/.env.
+- `data.db` holds one shared `psycopg_pool.ConnectionPool` per process; `connect()`
+  borrows from it, and the with-block commits on success and rolls back on error.
+  Do not open raw connections in API code.
+- Use the Supabase **transaction** pooler (port 6543) for API workloads, not the
+  session pooler (5432). Server-side prepared statements are disabled for it.
+- Tune with DATABASE_POOL_MIN / DATABASE_POOL_MAX; DATABASE_SSLMODE defaults to require.
 - Keep database credentials in the backend.
 - React should receive event JSON through the backend API.
 - The event query and JSON conversion are implemented.
@@ -69,17 +75,23 @@ once at the API boundary before JSON serialization. Event dictionaries retain
 | `delete_event(event_id, organizer_id)` | `True`; permanently deletes event and its registrations; owner only |
 | `list_organizer_events(organizer_id)` | Full event list, all statuses and dates, sorted by start time then ID |
 | `get_event(event_id)` | Full Published event, including past events; raises an error if missing/unpublished |
+| `get_organizer_event(event_id, organizer_id)` | Full event in any status, including Draft; owner only; use this to load edit forms |
 | `list_events()` | Upcoming Published events ordered by start time then ID |
 | `search_events(query=None, category=None, date_from=None, date_to=None)` | Same visibility/order as list_events; filters combined with AND |
 | `register_user(event_id, user_id)` | Registration dictionary; reactivates an existing Cancelled row |
 | `cancel_registration(event_id, user_id)` | Registration dictionary with Cancelled status; repeated cancellation returns the same row |
 | `list_user_registrations(user_id)` | Own active/cancelled registrations, including past events, with nested `event` dictionary |
 | `list_attendees(event_id, organizer_id)` | Active registrations plus attendee `name` and `email`; owner only |
+| `create_user(name, email, profile_image=None)` | Full user dictionary; email is unique case-insensitively |
+| `get_user(user_id)` | Full user dictionary; raises `USER_NOT_FOUND` |
+| `find_user_by_email(email)` | Full user dictionary or `None`; case-insensitive; never raises for a miss |
+| `get_or_create_user(email, name, profile_image=None)` | Existing profile, or a new one on first sign-in; safe under concurrent first sign-ins |
 
 All user/organizer IDs must be UUIDs from verified authentication, never trusted
 from a request body. The API is responsible for authenticating and authorizing
-access to user-specific list functions. A profile must already exist in
-`public.users`; login/profile provisioning is outside this data layer.
+access to user-specific list functions. Profiles are provisioned through `get_or_create_user()`, which the
+authentication integration should call once per verified sign-in; this data layer
+stores no passwords, sessions, or tokens.
 `get_event()` is public; organizers use `list_organizer_events()` to see drafts.
 Cancellation is allowed before the event starts regardless of event status.
 Hard deletion removes registration history; use `update_event(..., status="Cancelled")`
@@ -127,7 +139,11 @@ Updates accept one or more of the same editable fields. Omitted fields stay
 unchanged; null clears only image, category, or capacity. Combined old/new dates
 must still have end > start. A supplied new start must be future. Setting status
 to Published publishes the event; setting it to Cancelled removes it from public
-lookup/discovery. No additional status-transition workflow is enforced yet.
+lookup/discovery **and cancels every Registered row for that event**, so
+`list_attendees()` returns `[]` and attendees see `registration_status`
+`Cancelled` in `list_user_registrations()`. Registration rows survive (unlike a
+hard delete), but re-publishing does not restore anyone: cancelled attendees must
+register again. No other status-transition workflow is enforced yet.
 Capacity cannot fall below the count of Registered rows (Cancelled rows do not
 count). Capacity may equal the count; null removes the limit.
 
@@ -164,6 +180,7 @@ HTTP routes.
 | CAPACITY_TOO_SMALL | Proposed limit is below active registrations | 409 |
 | REGISTRATION_NOT_FOUND | Caller has no registration to cancel | 404 |
 | INVALID_INPUT | Invalid ID, event fields, or search parameters | 400 |
+| EMAIL_TAKEN | Another profile already uses this email | 409 |
 
 Registration checks run in this order: valid IDs, event existence, Published
 status, future start, user existence, duplicate, capacity. Unexpected connection

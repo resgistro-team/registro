@@ -2,7 +2,7 @@ name: Data layer tests
 
 on:
   push:
-    branches: ["fix/data-layer-handoff"]
+    branches: ["main"]
   pull_request:
     branches: ["main"]
 

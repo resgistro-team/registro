@@ -182,3 +182,90 @@ def test_concurrent_registration_and_capacity_edit(users, capacity_edit):
         assert sorted(results) == ["EVENT_FULL", "registered"]
     event = r.get_event(eid)
     assert event["registration_count"] <= event["capacity"]
+
+
+def test_pool_reuses_connections_and_commits(db_connect, monkeypatch):
+    import data.db as dbmod
+
+    monkeypatch.setenv("DATABASE_URL", os.environ["TEST_DATABASE_URL"])
+    monkeypatch.setenv("DATABASE_SSLMODE", "prefer")
+    monkeypatch.setenv("DATABASE_POOL_MAX", "2")
+    monkeypatch.setattr(dbmod, "_pool", None)
+    email = f"{uuid4()}@example.com"
+    try:
+        pids = set()
+        for _ in range(6):
+            with dbmod.connect() as conn:
+                pids.add(conn.info.backend_pid)
+                assert conn.execute("SELECT 1 AS n").fetchone()["n"] == 1
+        # A connection per call would open six backends instead of reusing two.
+        assert len(pids) <= 2
+        with dbmod.connect() as conn:
+            conn.execute("INSERT INTO public.users (name, email) VALUES (%s, %s)", ("Pool user", email))
+        with dbmod.connect() as conn:
+            # The with-block above must have committed before returning the connection.
+            assert conn.execute("SELECT COUNT(*) AS n FROM public.users WHERE email = %s", (email,)).fetchone()["n"] == 1
+    finally:
+        if dbmod._pool is not None:
+            dbmod._pool.close()
+        monkeypatch.setattr(dbmod, "_pool", None)
+        with db_connect() as conn:
+            conn.execute("DELETE FROM public.users WHERE email = %s", (email,))
+
+
+def test_user_provisioning(db):
+    email = f"{uuid4()}@example.com"
+    try:
+        assert r.find_user_by_email(email) is None
+        created = r.create_user(" Ada Lovelace ", email)
+        assert created["name"] == "Ada Lovelace" and created["profile_image"] is None
+        assert r.get_user(created["user_id"])["user_id"] == created["user_id"]
+        # Email uniqueness ignores capitalization.
+        assert r.find_user_by_email(email.upper())["user_id"] == created["user_id"]
+        expect("EMAIL_TAKEN", r.create_user, "Duplicate", email.upper())
+        assert r.get_or_create_user(email, "Ignored")["user_id"] == created["user_id"]
+        expect("USER_NOT_FOUND", r.get_user, uuid4())
+        expect("INVALID_INPUT", r.create_user, "  ", f"{uuid4()}@example.com")
+        expect("INVALID_INPUT", r.create_user, "No at sign", "not-an-email")
+        expect("INVALID_INPUT", r.create_user, "Two at signs", "a@b@example.com")
+        json.dumps(json_ready(created))
+    finally:
+        with db() as conn:
+            conn.execute("DELETE FROM public.users WHERE lower(email) = lower(%s)", (email,))
+
+
+def test_get_organizer_event_loads_drafts(users):
+    owner, other, *_ = users
+    draft = r.create_event(owner, **payload())
+    eid = draft["event_id"]
+    expect("EVENT_NOT_PUBLISHED", r.get_event, eid)
+    loaded = r.get_organizer_event(eid, owner)
+    assert loaded["status"] == "Draft" and loaded["organizer_name"] == "Test user"
+    assert loaded["registration_count"] == 0 and loaded["remaining_capacity"] is None
+    expect("FORBIDDEN", r.get_organizer_event, eid, other)
+    expect("EVENT_NOT_FOUND", r.get_organizer_event, uuid4(), owner)
+
+
+def test_cancelling_event_cancels_registrations(users):
+    owner, attendee, other, _ = users
+    eid = r.create_event(owner, **payload(status="Published", capacity=5))["event_id"]
+    r.register_user(eid, attendee)
+    r.register_user(eid, other)
+    assert len(r.list_attendees(eid, owner)) == 2
+
+    cancelled = r.update_event(eid, owner, status="Cancelled")
+    assert cancelled["status"] == "Cancelled" and cancelled["registration_count"] == 0
+    # The organizer must stop seeing people as attending a cancelled event.
+    assert r.list_attendees(eid, owner) == []
+    rows = r.list_user_registrations(attendee)
+    assert len(rows) == 1 and rows[0]["registration_status"] == "Cancelled"
+    # The history row survives, unlike a hard delete.
+    assert rows[0]["event"]["status"] == "Cancelled"
+    assert rows[0]["event"]["organizer_name"] == "Test user"
+    expect("EVENT_NOT_PUBLISHED", r.register_user, eid, attendee)
+
+    # Re-publishing does not silently restore anyone.
+    r.update_event(eid, owner, status="Published")
+    assert r.list_attendees(eid, owner) == []
+    assert r.register_user(eid, attendee)["registration_status"] == "Registered"
+    assert len(r.list_attendees(eid, owner)) == 1

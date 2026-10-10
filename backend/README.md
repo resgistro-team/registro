@@ -14,8 +14,10 @@ py -m venv .venv
 ```
 
 Create `backend/.env` using `.env.example` as the template. If you already have
-`.env`, keep it; do not overwrite it. Set DATABASE_URL to the Supabase **Session
-pooler URI** from the project's Connect panel. Replace the entire password
+`.env`, keep it; do not overwrite it. Set DATABASE_URL to the Supabase
+**Transaction pooler URI** (port 6543) from the project's Connect panel. The
+session pooler (5432) holds one server connection per client and runs out under
+API traffic. Replace the entire password
 placeholder including its brackets. Percent-encode special characters in the
 password portion of the URI. Obtain development credentials from your team
 privately; do not put them in GitHub, PR comments, or the React application.
@@ -33,8 +35,9 @@ to rerun setup.
 
 RLS is enabled, with browser-role access revoked. Use the privileged backend
 connection, not browser SQL access. The API must enforce authentication and
-ownership. Users/profiles must be provisioned by the authentication integration.
-The seed profiles are test data, not login accounts. Seed dates are relative to
+ownership. Call `get_or_create_user()` once per verified sign-in to provision a
+profile; this layer stores no passwords, sessions, or tokens. The seed profiles
+are test data, not login accounts. Seed dates are relative to
 first insertion; rerunning seed does not refresh existing event dates.
 
 ## Verify
@@ -49,6 +52,14 @@ first insertion; rerunning seed does not refresh existing event dates.
 The last two checks assume the original demo data is unchanged and its events
 have not started. Capacity check creates and deletes only a unique temporary
 event. The regression suite below uses isolated records and future dates instead.
+
+## Connections
+
+`data/db.py` keeps one shared `ConnectionPool` per process, opened on first use.
+`connect()` borrows a connection for the duration of a with-block, which commits
+on success and rolls back on an exception. Never open raw connections in API
+code, and never hold a borrowed connection across a request boundary. Size the
+pool with DATABASE_POOL_MIN / DATABASE_POOL_MAX (defaults 1 and 10).
 
 ## Integration
 
