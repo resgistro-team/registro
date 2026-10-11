@@ -27,7 +27,7 @@ events = [
         "status": "published",
     },
     {
-        "event_id": 1,
+        "event_id": 3,
         "title": "Bible Study",
         "description": "",
         "date_and_time_start": datetime(2026, 10, 7, 13, 0),
@@ -42,6 +42,10 @@ events = [
 @app.get("/health")
 def health_check():
     return jsonify({"status": "ok"})
+
+@app.get("/")
+def home():
+    return jsonify({"message": "Welcome to the Registro API"})
 
 @app.get("/events")
 def list_events():
@@ -66,3 +70,13 @@ def list_events():
             event for event in results
             if event["category"].casefold() == category
         ]
+    
+    return jsonify(results)
+
+@app.get("/events/<int:event_id>")
+def event_details(event_id):
+    for event in events:
+        if event["event_id"] == event_id and event["status"] == "published":
+            return jsonify(event)
+
+    abort(404, description="Event not found")
