@@ -1,14 +1,11 @@
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, g
 from auth_middleware import require_auth
-from data.repository import (
-    list_user_registrations,
-    list_organizer_events,
-    list_attendees,
-    DataError
-)
+import data.repository as repo
 from data.json_helpers import json_ready
 from helpers import send_error, enrich_event
+
+DataError = repo.DataError
 
 users_bp = Blueprint("users", __name__)
 
@@ -18,7 +15,7 @@ users_bp = Blueprint("users", __name__)
 def get_my_events():
     user_id = g.user["user_id"]
     try:
-        registrations = list_user_registrations(user_id)
+        registrations = repo.list_user_registrations(user_id)
     except DataError as err:
         return send_error(err.code, err.message)
 
@@ -66,7 +63,7 @@ def get_my_events():
 def get_organizer_dashboard():
     user_id = g.user["user_id"]
     try:
-        events = list_organizer_events(user_id)
+        events = repo.list_organizer_events(user_id)
     except DataError as err:
         return send_error(err.code, err.message)
 
@@ -87,7 +84,7 @@ def get_organizer_dashboard():
         enriched["fillPercentage"] = fill_pct
 
         try:
-            attendees = list_attendees(eid, user_id)
+            attendees = repo.list_attendees(eid, user_id)
             enriched["attendees"] = json_ready(attendees[:10])
         except Exception:
             enriched["attendees"] = []

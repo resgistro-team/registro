@@ -1,22 +1,11 @@
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, g
 from auth_middleware import require_auth, optional_auth
-from data.repository import (
-    create_event,
-    update_event,
-    delete_event,
-    list_organizer_events,
-    get_event,
-    get_organizer_event,
-    search_events,
-    list_events,
-    register_user,
-    cancel_registration,
-    list_attendees,
-    DataError
-)
+import data.repository as repo
 from data.json_helpers import json_ready
 from helpers import send_error, enrich_event
+
+DataError = repo.DataError
 
 events_bp = Blueprint("events", __name__)
 
@@ -68,7 +57,7 @@ def _extract_event_fields(data):
 @require_auth
 def get_organizer_events_list():
     try:
-        events = list_organizer_events(g.user["user_id"])
+        events = repo.list_organizer_events(g.user["user_id"])
         enriched = [enrich_event(e, g.user["user_id"]) for e in events]
         return jsonify(enriched), 200
     except DataError as err:
@@ -79,8 +68,8 @@ def get_organizer_events_list():
 @require_auth
 def get_organizer_event_detail(event_id):
     try:
-        event = get_organizer_event(event_id, g.user["user_id"])
-        attendees = list_attendees(event_id, g.user["user_id"])
+        event = repo.get_organizer_event(event_id, g.user["user_id"])
+        attendees = repo.list_attendees(event_id, g.user["user_id"])
         enriched = enrich_event(event, g.user["user_id"])
         enriched["attendees"] = json_ready(attendees)
         return jsonify(enriched), 200
@@ -95,7 +84,7 @@ def create_new_event():
     fields = _extract_event_fields(data)
 
     try:
-        created = create_event(g.user["user_id"], **fields)
+        created = repo.create_event(g.user["user_id"], **fields)
         enriched = enrich_event(created, g.user["user_id"])
         return jsonify({
             "message": "Event created successfully!",
@@ -110,7 +99,7 @@ def _handle_update(event_id):
     fields = _extract_event_fields(data)
 
     try:
-        updated = update_event(event_id, g.user["user_id"], **fields)
+        updated = repo.update_event(event_id, g.user["user_id"], **fields)
         enriched = enrich_event(updated, g.user["user_id"])
         return jsonify({
             "message": "Event updated successfully!",
@@ -141,7 +130,7 @@ def patch_event_status(event_id):
         return send_error("INVALID_INPUT", "status is required.")
 
     try:
-        updated = update_event(event_id, g.user["user_id"], status=status)
+        updated = repo.update_event(event_id, g.user["user_id"], status=status)
         enriched = enrich_event(updated, g.user["user_id"])
         return jsonify({
             "message": "Event updated successfully!",
@@ -155,7 +144,7 @@ def patch_event_status(event_id):
 @require_auth
 def remove_event(event_id):
     try:
-        delete_event(event_id, g.user["user_id"])
+        repo.delete_event(event_id, g.user["user_id"])
         return jsonify({
             "success": True,
             "message": "Event deleted successfully."
@@ -168,8 +157,8 @@ def remove_event(event_id):
 @require_auth
 def get_event_registrations(event_id):
     try:
-        event = get_organizer_event(event_id, g.user["user_id"])
-        attendees = list_attendees(event_id, g.user["user_id"])
+        event = repo.get_organizer_event(event_id, g.user["user_id"])
+        attendees = repo.list_attendees(event_id, g.user["user_id"])
         return jsonify({
             "eventId": str(event["event_id"]),
             "eventTitle": event["title"],
@@ -202,7 +191,7 @@ def list_and_search_events():
     # Organizer filter
     if organizer_id:
         try:
-            events = list_organizer_events(organizer_id)
+            events = repo.list_organizer_events(organizer_id)
             if status and status.lower() != "all":
                 events = [e for e in events if e.get("status", "").lower() == status.lower()]
             enriched = [enrich_event(e, user_id) for e in events]
@@ -226,7 +215,7 @@ def list_and_search_events():
         category = None
 
     try:
-        events = search_events(
+        events = repo.search_events(
             query=search,
             category=category,
             date_from=date_from,
@@ -255,12 +244,12 @@ def get_event_detail(event_id):
     user_id = g.user["user_id"] if g.user else None
 
     try:
-        event = get_event(event_id)
+        event = repo.get_event(event_id)
     except DataError as err:
         # If unpublished and current user is the owner, allow owner to view draft
         if err.code == "EVENT_NOT_PUBLISHED" and user_id:
             try:
-                event = get_organizer_event(event_id, user_id)
+                event = repo.get_organizer_event(event_id, user_id)
             except DataError:
                 return send_error(err.code, err.message)
         else:
@@ -270,7 +259,7 @@ def get_event_detail(event_id):
     enriched = enrich_event(event, user_id)
     if is_owner:
         try:
-            attendees = list_attendees(event_id, user_id)
+            attendees = repo.list_attendees(event_id, user_id)
             enriched["attendees"] = json_ready(attendees)
         except Exception:
             pass
@@ -282,14 +271,14 @@ def get_event_detail(event_id):
 @require_auth
 def register_for_event(event_id):
     try:
-        reg = register_user(event_id, g.user["user_id"])
+        reg = repo.register_user(event_id, g.user["user_id"])
         # Ensure registration status is "Registered" per DATA_CONTRACT.md
         reg_ready = json_ready(dict(reg))
         reg_ready["status"] = "Registered"
 
         # Fetch updated event detail
         try:
-            ev = get_event(event_id)
+            ev = repo.get_event(event_id)
             enriched_event = enrich_event(ev, g.user["user_id"])
         except Exception:
             enriched_event = None
@@ -307,11 +296,11 @@ def register_for_event(event_id):
 @require_auth
 def cancel_event_registration(event_id):
     try:
-        reg = cancel_registration(event_id, g.user["user_id"])
+        reg = repo.cancel_registration(event_id, g.user["user_id"])
         reg_ready = json_ready(dict(reg))
 
         try:
-            ev = get_event(event_id)
+            ev = repo.get_event(event_id)
             enriched_event = enrich_event(ev, g.user["user_id"])
         except Exception:
             enriched_event = None

@@ -1,16 +1,10 @@
 from flask import Blueprint, request, jsonify, g
 from auth_middleware import generate_token, require_auth
-from data.repository import (
-    create_user,
-    get_user,
-    find_user_by_email,
-    list_user_registrations,
-    list_organizer_events,
-    DataError
-)
+import data.repository as repo
 from data.json_helpers import json_ready
-from data.db import connect
 from helpers import send_error
+
+DataError = repo.DataError
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -41,7 +35,7 @@ def register():
         return jsonify({"error": "Name, email, and password are required."}), 400
 
     try:
-        new_user = create_user(name=name, email=email, profile_image=avatar)
+        new_user = repo.create_user(name=name, email=email, profile_image=avatar)
     except DataError as err:
         if err.code == "EMAIL_TAKEN":
             return jsonify({
@@ -68,7 +62,7 @@ def login():
     if not email or not password:
         return jsonify({"error": "Email and password are required."}), 400
 
-    user = find_user_by_email(email)
+    user = repo.find_user_by_email(email)
     if not user:
         return jsonify({"error": "Invalid email or password."}), 401
 
@@ -84,9 +78,9 @@ def login():
 @require_auth
 def get_current_user():
     user = g.user
-    registrations = list_user_registrations(user["user_id"])
+    registrations = repo.list_user_registrations(user["user_id"])
     active_regs = [r for r in registrations if r.get("registration_status") == "Registered"]
-    organized = list_organizer_events(user["user_id"])
+    organized = repo.list_organizer_events(user["user_id"])
 
     return jsonify({
         "user": _sanitize_user(user),
@@ -117,19 +111,19 @@ def update_profile():
 
     if updates:
         params.append(g.user["user_id"])
-        with connect() as conn:
+        with repo.connect() as conn:
             conn.execute(
                 f"UPDATE public.users SET {', '.join(updates)} WHERE user_id = %s",
                 params
             )
 
-    updated_user = get_user(g.user["user_id"])
+    updated_user = repo.get_user(g.user["user_id"])
     return jsonify({"user": _sanitize_user(updated_user)}), 200
 
 
 @auth_bp.route("/demo-users", methods=["GET"])
 def get_demo_users():
-    with connect() as conn:
+    with repo.connect() as conn:
         users = conn.execute("SELECT * FROM public.users ORDER BY created_at").fetchall()
     return jsonify([_sanitize_user(u) for u in users]), 200
 
@@ -142,7 +136,7 @@ def switch_demo():
         return jsonify({"error": "Demo user ID is required."}), 400
 
     try:
-        user = get_user(user_id)
+        user = repo.get_user(user_id)
     except DataError:
         return jsonify({"error": "Demo user not found."}), 404
 

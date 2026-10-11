@@ -6,13 +6,13 @@ from uuid import uuid4
 from app import create_app
 from auth_middleware import generate_token, get_jwt_secret
 from data.repository import create_user
-import data.db as dbmod
+import data.repository as repo
 
 
 @pytest.fixture
 def app(monkeypatch, db):
     monkeypatch.setenv("JWT_SECRET", "test-secret-key-for-api-tests-123456")
-    monkeypatch.setattr(dbmod, "connect", db)
+    monkeypatch.setattr(repo, "connect", db)
     application = create_app()
     application.config.update({"TESTING": True})
     return application

@@ -1,6 +1,6 @@
 from flask import jsonify
+import data.repository as repo
 from data.json_helpers import json_ready
-from data.db import connect
 
 STATUS_MAP = {
     "EVENT_NOT_FOUND": 404,
@@ -56,7 +56,8 @@ def enrich_event(event, current_user_id=None):
 
     if current_user_id:
         try:
-            with connect() as conn:
+            # Use repo.connect so the conftest monkeypatch applies correctly
+            with repo.connect() as conn:
                 row = conn.execute(
                     """SELECT registration_id, event_id, user_id, registration_status, registered_at
                        FROM public.registrations
