@@ -3,15 +3,16 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-# Set test environment if needed
 from app import create_app
-from auth_middleware import generate_token
+from auth_middleware import generate_token, get_jwt_secret
 from data.repository import create_user
+import data.db as dbmod
 
 
 @pytest.fixture
-def app():
-    os.environ["JWT_SECRET"] = "test-secret-key-for-api-tests-123456"
+def app(monkeypatch, db):
+    monkeypatch.setenv("JWT_SECRET", "test-secret-key-for-api-tests-123456")
+    monkeypatch.setattr(dbmod, "connect", db)
     application = create_app()
     application.config.update({"TESTING": True})
     return application
@@ -23,7 +24,7 @@ def client(app):
 
 
 @pytest.fixture
-def test_organizer():
+def test_organizer(app):
     email = f"test-org-{uuid4()}@example.com"
     user = create_user("Test Organizer", email)
     token = generate_token(user)
@@ -31,7 +32,7 @@ def test_organizer():
 
 
 @pytest.fixture
-def test_attendee():
+def test_attendee(app):
     email = f"test-att-{uuid4()}@example.com"
     user = create_user("Test Attendee", email)
     token = generate_token(user)
@@ -43,18 +44,14 @@ def auth_header(token):
 
 
 def test_jwt_secret_crash_when_missing(monkeypatch):
-    import importlib
-    import auth_middleware
-
     monkeypatch.delenv("JWT_SECRET", raising=False)
-    # Reloading auth_middleware should crash immediately without fallback
+    # Verifies there is no hardcoded fallback and RuntimeError is raised
     with pytest.raises(RuntimeError) as exc_info:
-        importlib.reload(auth_middleware)
+        get_jwt_secret()
     assert "JWT_SECRET" in str(exc_info.value)
 
-    # Restore and reload for following tests
-    monkeypatch.setenv("JWT_SECRET", "test-secret-key-for-api-tests-123456")
-    importlib.reload(auth_middleware)
+    with pytest.raises(RuntimeError):
+        generate_token({"user_id": uuid4(), "email": "test@example.com", "name": "Test"})
 
 
 def test_health_check(client):

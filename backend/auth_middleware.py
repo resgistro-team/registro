@@ -3,15 +3,19 @@ from functools import wraps
 from flask import request, jsonify, g
 import jwt
 
-JWT_SECRET = os.getenv("JWT_SECRET")
-if not JWT_SECRET:
-    raise RuntimeError(
-        "JWT_SECRET environment variable is missing or empty. "
-        "Server cannot start securely without a valid JWT_SECRET configured."
-    )
+
+def get_jwt_secret():
+    secret = os.getenv("JWT_SECRET")
+    if not secret:
+        raise RuntimeError(
+            "JWT_SECRET environment variable is missing or empty. "
+            "Server cannot start securely without a valid JWT_SECRET configured."
+        )
+    return secret
 
 
 def generate_token(user):
+    secret = get_jwt_secret()
     user_id = str(user.get("user_id") or user.get("id"))
     payload = {
         "id": user_id,
@@ -19,7 +23,7 @@ def generate_token(user):
         "email": user.get("email"),
         "name": user.get("name"),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return jwt.encode(payload, secret, algorithm="HS256")
 
 
 def require_auth(f):
@@ -38,11 +42,14 @@ def require_auth(f):
 
         token = auth_header.split(" ", 1)[1].strip()
         try:
-            decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            secret = get_jwt_secret()
+            decoded = jwt.decode(token, secret, algorithms=["HS256"])
             user_id = decoded.get("user_id") or decoded.get("id")
             from data.repository import get_user, DataError
             user = get_user(user_id)
             g.user = user
+        except RuntimeError:
+            raise
         except jwt.PyJWTError:
             return jsonify({
                 "code": "UNAUTHORIZED",
@@ -89,10 +96,13 @@ def optional_auth(f):
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ", 1)[1].strip()
             try:
-                decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+                secret = get_jwt_secret()
+                decoded = jwt.decode(token, secret, algorithms=["HS256"])
                 user_id = decoded.get("user_id") or decoded.get("id")
                 from data.repository import get_user
                 g.user = get_user(user_id)
+            except RuntimeError:
+                raise
             except Exception:
                 g.user = None
         return f(*args, **kwargs)
