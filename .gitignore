@@ -18,3 +18,7 @@ dist-ssr/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Local database fixtures/temp files
+db.json
+backend/data/db.json

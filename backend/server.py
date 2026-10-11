@@ -1,0 +1,10 @@
+import os
+from app import create_app
+
+app = create_app()
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 5000))
+    print(f"🚀 Registro API Server running at http://localhost:{port}")
+    print(f"📡 Health check: http://localhost:{port}/api/health")
+    app.run(host="0.0.0.0", port=port, debug=False)
