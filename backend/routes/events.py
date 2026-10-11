@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from flask import Blueprint, request, jsonify, g
 from auth_middleware import require_auth, optional_auth
 import data.repository as repo
@@ -34,14 +35,7 @@ def _extract_event_fields(data):
         fields["category"] = data["category"]
 
     if "capacity" in data:
-        cap = data["capacity"]
-        if cap == "" or cap is None:
-            fields["capacity"] = None
-        else:
-            try:
-                fields["capacity"] = int(cap)
-            except (ValueError, TypeError):
-                fields["capacity"] = cap
+        fields["capacity"] = data["capacity"]
 
     if "status" in data:
         fields["status"] = data["status"]
@@ -183,7 +177,6 @@ def list_and_search_events():
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
     organizer_id = request.args.get("organizerId")
-    status = request.args.get("status")
     sort = request.args.get("sort")
 
     user_id = g.user["user_id"] if g.user else None
@@ -191,9 +184,7 @@ def list_and_search_events():
     # Organizer filter
     if organizer_id:
         try:
-            events = repo.list_organizer_events(organizer_id)
-            if status and status.lower() != "all":
-                events = [e for e in events if e.get("status", "").lower() == status.lower()]
+            events = repo.search_events(organizer_id=organizer_id)
             enriched = [enrich_event(e, user_id) for e in events]
             return jsonify(enriched), 200
         except DataError as err:
@@ -203,8 +194,10 @@ def list_and_search_events():
     now = datetime.now(timezone.utc)
     if date_filter:
         if date_filter == "today":
-            date_from = now.strftime("%Y-%m-%dT00:00:00Z")
-            date_to = (now + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
+            eastern = ZoneInfo("America/New_York")
+            local_today = now.astimezone(eastern).date()
+            date_from = datetime.combine(local_today, datetime.min.time(), tzinfo=eastern).isoformat()
+            date_to = datetime.combine(local_today + timedelta(days=1), datetime.min.time(), tzinfo=eastern).isoformat()
         elif date_filter == "this_week":
             date_from = now.isoformat().replace("+00:00", "Z")
             date_to = (now + timedelta(days=7)).isoformat().replace("+00:00", "Z")
@@ -228,7 +221,7 @@ def list_and_search_events():
 
     # Client sorting
     if sort == "popular":
-        enriched.sort(key=lambda x: x.get("registeredCount", 0), reverse=True)
+        enriched.sort(key=lambda x: x.get("registration_count", 0), reverse=True)
     elif sort == "newest":
         enriched.sort(key=lambda x: x.get("created_at", ""), reverse=True)
     else:

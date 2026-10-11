@@ -1,7 +1,8 @@
 # Registro backend data layer setup
 
 Requires Python 3.11+ and a PostgreSQL database (the team uses Supabase).
-No Flask/FastAPI routes or authentication are implemented in this folder yet.
+The Flask API accepts Supabase Auth access tokens; sign-up and sign-in remain in
+the frontend through Supabase Auth.
 
 ## Set up a local checkout (Windows PowerShell)
 
@@ -22,6 +23,13 @@ placeholder including its brackets. Percent-encode special characters in the
 password portion of the URI. Obtain development credentials from your team
 privately; do not put them in GitHub, PR comments, or the React application.
 `data/db.py` requires SSL. Git ignores `.env` and `.venv`.
+
+Set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` as well. The backend sends
+the incoming bearer token to Supabase Auth's `/auth/v1/user` endpoint for
+verification, so it supports both legacy HS256 and asymmetric signing-key
+projects without holding a JWT signing secret. At sign-up, the frontend must set
+the user's `user_metadata.full_name`; the API uses that verified value and email
+to provision the Registro profile on the first authenticated request.
 
 ## Initialize a database (database owner only)
 

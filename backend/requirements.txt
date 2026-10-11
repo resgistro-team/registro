@@ -3,4 +3,3 @@ psycopg-pool>=3.2,<4
 python-dotenv>=1,<2
 flask>=3.0,<4
 flask-cors>=4.0,<7
-pyjwt>=2.8,<3

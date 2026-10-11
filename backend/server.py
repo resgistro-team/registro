@@ -1,11 +1,11 @@
 import os
 from app import create_app
-from auth_middleware import get_jwt_secret
+from auth_middleware import _supabase_config
 
 app = create_app()
 
 if __name__ == "__main__":
-    get_jwt_secret()  # Refuses to start if JWT_SECRET is not set
+    _supabase_config()  # Refuses to start without Supabase Auth configuration
     port = int(os.getenv("PORT", 5000))
     print(f"🚀 Registro API Server running at http://localhost:{port}")
     print(f"📡 Health check: http://localhost:{port}/api/health")

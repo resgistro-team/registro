@@ -31,6 +31,7 @@ EVENT_SELECT = "SELECT" + EVENT_COLUMNS + EVENT_FROM
 REQUIRED = {"title", "description", "location", "start_datetime", "end_datetime"}
 EDITABLE = REQUIRED | {"image", "category", "capacity", "status"}
 STATUSES = {"Draft", "Published", "Cancelled", "Completed"}
+UNSET = object()
 
 
 def _id(value):
@@ -176,12 +177,33 @@ def get_or_create_user(email, name, profile_image=None):
         return concurrent
 
 
+def update_user(user_id, *, name=UNSET, profile_image=UNSET):
+    """Update a Registro profile without exposing raw database access to routes."""
+    user_id = _id(user_id)
+    fields = {}
+    if name is not UNSET:
+        fields["name"] = _text(name, "name")
+    if profile_image is not UNSET:
+        fields["profile_image"] = _text(profile_image, "profile_image", required=False)
+    if not fields:
+        return get_user(user_id)
+
+    statement = sql.SQL("UPDATE public.users SET {} WHERE user_id = %s RETURNING *").format(
+        sql.SQL(", ").join(sql.SQL("{} = %s").format(sql.Identifier(key)) for key in fields)
+    )
+    with connect() as conn:
+        row = conn.execute(statement, [*fields.values(), user_id]).fetchone()
+    if row is None:
+        raise DataError("USER_NOT_FOUND", "User not found.")
+    return row
+
+
 def list_events():
     """Upcoming published events, in start-time order."""
     return search_events()
 
 
-def search_events(query=None, category=None, date_from=None, date_to=None):
+def search_events(query=None, category=None, date_from=None, date_to=None, organizer_id=None):
     """Case-insensitive literal substring search; date range is [from, to)."""
     clauses = ["e.status = 'Published'", "e.start_datetime > CURRENT_TIMESTAMP"]
     params = []
@@ -195,6 +217,9 @@ def search_events(query=None, category=None, date_from=None, date_to=None):
             raise DataError("INVALID_INPUT", "category must be text.")
         clauses.append("e.category = %s")
         params.append(category)
+    if organizer_id is not None:
+        clauses.append("e.organizer_id = %s")
+        params.append(_id(organizer_id))
     lower = _date(date_from, "date_from") if date_from is not None else None
     upper = _date(date_to, "date_to") if date_to is not None else None
     if lower is not None and upper is not None and lower >= upper:

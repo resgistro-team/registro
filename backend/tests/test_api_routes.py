@@ -4,15 +4,25 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from app import create_app
-from auth_middleware import generate_token, get_jwt_secret
+from auth_middleware import _supabase_config
 from data.repository import create_user
 import data.repository as repo
 
 
 @pytest.fixture
 def app(monkeypatch, db):
-    monkeypatch.setenv("JWT_SECRET", "test-secret-key-for-api-tests-123456")
     monkeypatch.setattr(repo, "connect", db)
+    # Authentication is Supabase-owned.  Route tests replace the network
+    # verifier with a deterministic representation of a verified identity.
+    def verified_identity(token):
+        if not token.startswith("test-token:"):
+            raise ValueError("invalid test token")
+        return {
+            "email": token.removeprefix("test-token:"),
+            "user_metadata": {"full_name": "Authenticated Test User"},
+        }
+
+    monkeypatch.setattr("auth_middleware.verify_supabase_access_token", verified_identity)
     application = create_app()
     application.config.update({"TESTING": True})
     return application
@@ -27,7 +37,7 @@ def client(app):
 def test_organizer(app):
     email = f"test-org-{uuid4()}@example.com"
     user = create_user("Test Organizer", email)
-    token = generate_token(user)
+    token = f"test-token:{email}"
     return {"user": user, "token": token, "email": email}
 
 
@@ -35,7 +45,7 @@ def test_organizer(app):
 def test_attendee(app):
     email = f"test-att-{uuid4()}@example.com"
     user = create_user("Test Attendee", email)
-    token = generate_token(user)
+    token = f"test-token:{email}"
     return {"user": user, "token": token, "email": email}
 
 
@@ -43,15 +53,13 @@ def auth_header(token):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_jwt_secret_crash_when_missing(monkeypatch):
-    monkeypatch.delenv("JWT_SECRET", raising=False)
-    # Verifies there is no hardcoded fallback and RuntimeError is raised
+def test_supabase_configuration_requires_public_key(monkeypatch):
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_PUBLISHABLE_KEY", raising=False)
+    monkeypatch.delenv("SUPABASE_ANON_KEY", raising=False)
     with pytest.raises(RuntimeError) as exc_info:
-        get_jwt_secret()
-    assert "JWT_SECRET" in str(exc_info.value)
-
-    with pytest.raises(RuntimeError):
-        generate_token({"user_id": uuid4(), "email": "test@example.com", "name": "Test"})
+        _supabase_config()
+    assert "SUPABASE_URL" in str(exc_info.value)
 
 
 def test_health_check(client):
@@ -62,37 +70,14 @@ def test_health_check(client):
     assert "timestamp" in data
 
 
-def test_auth_register_and_login_without_role(client):
-    email = f"newuser-{uuid4()}@example.com"
-    # Attempt to supply role: should be ignored/not permitted
-    res = client.post("/api/auth/register", json={
-        "name": "Role Test User",
-        "email": email,
-        "password": "secretpassword",
-        "role": "admin"
-    })
-    assert res.status_code == 201
-    data = res.get_json()
-    assert "token" in data
-    # Role must not be set to "admin" or self-assigned
-    assert data["user"]["email"] == email
-
-    # Duplicate registration
-    dup_res = client.post("/api/auth/register", json={
-        "name": "Duplicate User",
-        "email": email,
-        "password": "secretpassword"
-    })
-    assert dup_res.status_code == 400
-
-    # Successful login
-    login_res = client.post("/api/auth/login", json={
-        "email": email,
-        "password": "secretpassword"
-    })
-    assert login_res.status_code == 200
-    login_data = login_res.get_json()
-    assert "token" in login_data
+def test_api_does_not_offer_credential_or_demo_endpoints(client):
+    for method, path in (
+        (client.post, "/api/auth/register"),
+        (client.post, "/api/auth/login"),
+        (client.get, "/api/auth/demo-users"),
+        (client.post, "/api/auth/switch-demo"),
+    ):
+        assert method(path).status_code == 404
 
 
 def test_auth_me_and_profile_update_role_removal(client, test_organizer):
@@ -111,6 +96,48 @@ def test_auth_me_and_profile_update_role_removal(client, test_organizer):
     assert put_res.status_code == 200
     put_data = put_res.get_json()
     assert put_data["user"]["name"] == "Updated Name"
+
+
+def test_invalid_bearer_token_cannot_impersonate_a_user(client):
+    response = client.get(
+        "/api/auth/me", headers=auth_header("not-a-supabase-access-token")
+    )
+    assert response.status_code == 401
+    assert response.get_json()["code"] == "UNAUTHORIZED"
+
+
+def test_public_organizer_filter_hides_drafts_and_cancelled_events(client, test_organizer):
+    start = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat().replace("+00:00", "Z")
+    end = (datetime.now(timezone.utc) + timedelta(days=5, hours=2)).isoformat().replace("+00:00", "Z")
+    created = client.post("/api/events", headers=auth_header(test_organizer["token"]), json={
+        "title": "Private draft",
+        "description": "This must not be public.",
+        "location": "Campus",
+        "start_datetime": start,
+        "end_datetime": end,
+        "status": "Draft",
+    })
+    assert created.status_code == 201
+
+    response = client.get(f"/api/events?organizerId={test_organizer['user']['user_id']}")
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+
+@pytest.mark.parametrize("capacity", [3.9, True, "3"])
+def test_capacity_is_not_coerced_by_the_http_layer(client, test_organizer, capacity):
+    start = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat().replace("+00:00", "Z")
+    end = (datetime.now(timezone.utc) + timedelta(days=5, hours=2)).isoformat().replace("+00:00", "Z")
+    response = client.post("/api/events", headers=auth_header(test_organizer["token"]), json={
+        "title": "Capacity validation",
+        "description": "The repository owns validation.",
+        "location": "Campus",
+        "start_datetime": start,
+        "end_datetime": end,
+        "capacity": capacity,
+    })
+    assert response.status_code == 400
+    assert response.get_json()["code"] == "INVALID_INPUT"
 
 
 def test_event_lifecycle_and_registration_status(client, test_organizer, test_attendee):

@@ -1,29 +1,62 @@
+import json
 import os
 from functools import wraps
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from flask import request, jsonify, g
-import jwt
 
 
-def get_jwt_secret():
-    secret = os.getenv("JWT_SECRET")
-    if not secret:
+class AuthenticationError(ValueError):
+    """The bearer token is missing, invalid, expired, or lacks required claims."""
+
+
+def _supabase_config():
+    url = os.getenv("SUPABASE_URL", "").rstrip("/")
+    # SUPABASE_ANON_KEY remains accepted for projects that have not migrated to
+    # Supabase's publishable-key naming.
+    api_key = os.getenv("SUPABASE_PUBLISHABLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+    if not url or not api_key:
         raise RuntimeError(
-            "JWT_SECRET environment variable is missing or empty. "
-            "Server cannot start securely without a valid JWT_SECRET configured."
+            "SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (or SUPABASE_ANON_KEY) "
+            "must be configured."
         )
-    return secret
+    return url, api_key
 
 
-def generate_token(user):
-    secret = get_jwt_secret()
-    user_id = str(user.get("user_id") or user.get("id"))
-    payload = {
-        "id": user_id,
-        "user_id": user_id,
-        "email": user.get("email"),
-        "name": user.get("name"),
-    }
-    return jwt.encode(payload, secret, algorithm="HS256")
+def verify_supabase_access_token(token):
+    """Verify an access token with Supabase Auth and return its user object.
+
+    Calling Auth's user endpoint supports both legacy HS256 projects and newer
+    asymmetric signing keys, and enforces Supabase's expiry and revocation rules.
+    """
+    url, api_key = _supabase_config()
+    request_to_supabase = Request(
+        f"{url}/auth/v1/user",
+        headers={"apikey": api_key, "Authorization": f"Bearer {token}"},
+        method="GET",
+    )
+    try:
+        with urlopen(request_to_supabase, timeout=5) as response:
+            user = json.load(response)
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+        raise AuthenticationError("Invalid or expired session.") from error
+
+    if not isinstance(user, dict):
+        raise AuthenticationError("Invalid user response from authentication provider.")
+    return user
+
+
+def _resolve_user(token):
+    identity = verify_supabase_access_token(token)
+    email = identity.get("email")
+    metadata = identity.get("user_metadata") or {}
+    full_name = metadata.get("full_name")
+    if not isinstance(email, str) or not isinstance(full_name, str) or not full_name.strip():
+        raise AuthenticationError("The authenticated user is missing email or full_name metadata.")
+
+    from data.repository import get_or_create_user
+    return get_or_create_user(email=email, name=full_name)
 
 
 def require_auth(f):
@@ -42,15 +75,10 @@ def require_auth(f):
 
         token = auth_header.split(" ", 1)[1].strip()
         try:
-            secret = get_jwt_secret()
-            decoded = jwt.decode(token, secret, algorithms=["HS256"])
-            user_id = decoded.get("user_id") or decoded.get("id")
-            from data.repository import get_user, DataError
-            user = get_user(user_id)
-            g.user = user
+            g.user = _resolve_user(token)
         except RuntimeError:
             raise
-        except jwt.PyJWTError:
+        except AuthenticationError:
             return jsonify({
                 "code": "UNAUTHORIZED",
                 "error": {
@@ -58,21 +86,6 @@ def require_auth(f):
                     "message": "Invalid or expired session. Please sign in again."
                 },
                 "message": "Invalid or expired session. Please sign in again."
-            }), 401
-        except DataError as e:
-            if e.code == "USER_NOT_FOUND":
-                return jsonify({
-                    "code": "USER_NOT_FOUND",
-                    "error": {
-                        "code": "USER_NOT_FOUND",
-                        "message": "User not found. Please sign in again."
-                    },
-                    "message": "User not found. Please sign in again."
-                }), 401
-            return jsonify({
-                "code": e.code,
-                "error": {"code": e.code, "message": e.message},
-                "message": e.message
             }), 401
         except Exception:
             return jsonify({
@@ -96,11 +109,7 @@ def optional_auth(f):
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ", 1)[1].strip()
             try:
-                secret = get_jwt_secret()
-                decoded = jwt.decode(token, secret, algorithms=["HS256"])
-                user_id = decoded.get("user_id") or decoded.get("id")
-                from data.repository import get_user
-                g.user = get_user(user_id)
+                g.user = _resolve_user(token)
             except RuntimeError:
                 raise
             except Exception:
