@@ -38,6 +38,8 @@ events = [
         "status": "published",
     },
 ]
+
+registrations = []
 #this calls the health function to check if the app is functioning well
 @app.get("/health")
 def health_check():
@@ -80,3 +82,44 @@ def event_details(event_id):
             return jsonify(event)
 
     abort(404, description="Event not found")
+
+@app.post("/events/<int:event_id>/registrations")
+def register_for_event(event_id):
+    event = next(
+        (
+            event for event in events
+            if event["event_id"] == event_id
+            and event["status"] == "published"
+        ),
+        None,
+    )
+
+    if event is None:
+        return jsonify({"error: Event not found"}), 404
+
+    data = request.get_json(silent=True)
+    attendee_id = data.get("attendee_id") if isinstance(data, dict) else None
+
+    if not isinstance(attendee_id, int):
+        return jsonify({"error": "attendee_id must bee an integer"}), 400
+
+    already_registered = any(
+        registration["event_id"] == event_id
+        and registration["attendee_id"] == attendee_id
+        and registration["registration_status"] == "registered"
+        for registration in registrations
+    )
+
+    if already_registered:
+        return jsonify({"error": "Already registered for this event"})
+
+    registration = {
+        "registration_id": len(registrations) + 1,
+        "event_id": event_id,
+        "attendee_id": attendee_id,
+        "registration_status": "registered",
+        "registered_at": datetime.now().isoformat(),
+    }
+    registrations.append(registration)
+
+    return jsonify(registration), 201
