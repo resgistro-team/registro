@@ -77,7 +77,7 @@ once at the API boundary before JSON serialization. Event dictionaries retain
 | `get_event(event_id)` | Full Published event, including past events; raises an error if missing/unpublished |
 | `get_organizer_event(event_id, organizer_id)` | Full event in any status, including Draft; owner only; use this to load edit forms |
 | `list_events()` | Upcoming Published events ordered by start time then ID |
-| `search_events(query=None, category=None, date_from=None, date_to=None)` | Same visibility/order as list_events; filters combined with AND |
+| `search_events(query=None, category=None, date_from=None, date_to=None, organizer_id=None)` | Same visibility/order as list_events; filters combined with AND |
 | `register_user(event_id, user_id)` | Registration dictionary; reactivates an existing Cancelled row |
 | `cancel_registration(event_id, user_id)` | Registration dictionary with Cancelled status; repeated cancellation returns the same row |
 | `list_user_registrations(user_id)` | Own active/cancelled registrations, including past events, with nested `event` dictionary |
@@ -86,12 +86,16 @@ once at the API boundary before JSON serialization. Event dictionaries retain
 | `get_user(user_id)` | Full user dictionary; raises `USER_NOT_FOUND` |
 | `find_user_by_email(email)` | Full user dictionary or `None`; case-insensitive; never raises for a miss |
 | `get_or_create_user(email, name, profile_image=None)` | Existing profile, or a new one on first sign-in; safe under concurrent first sign-ins |
+| `update_user(user_id, *, name=UNSET, profile_image=UNSET)` | Updates supplied profile fields and returns the full user; routes must not issue SQL directly |
 
 All user/organizer IDs must be UUIDs from verified authentication, never trusted
 from a request body. The API is responsible for authenticating and authorizing
 access to user-specific list functions. Profiles are provisioned through `get_or_create_user()`, which the
 authentication integration should call once per verified sign-in; this data layer
-stores no passwords, sessions, or tokens.
+stores no passwords, sessions, or tokens. The API verifies the caller's Supabase
+access token with Supabase Auth, then uses the verified `email` and
+`user_metadata.full_name` with `get_or_create_user()`. It never accepts a user
+ID, email, name, password, or locally-issued token as proof of identity.
 `get_event()` is public; organizers use `list_organizer_events()` to see drafts.
 Cancellation is allowed before the event starts regardless of event status.
 Hard deletion removes registration history; use `update_event(..., status="Cancelled")`
