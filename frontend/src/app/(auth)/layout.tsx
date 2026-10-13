@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Logo } from "@/components/Logo";
 import { authConfigured } from "@/lib/supabase/config";
 import nightLights from "../../../public/auth-night.jpg";
 
@@ -29,9 +30,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 pt-6 sm:px-10 lg:px-16">
         <Link
           href="/"
-          className="font-display text-xl font-semibold tracking-[-0.03em] text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper"
+          aria-label="Registro home"
+          className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper"
         >
-          Registro
+          <Logo />
         </Link>
         {authConfigured ? null : (
           <span className="rounded-full border border-line bg-ink/60 px-3 py-1 text-[0.7rem] font-medium tracking-wide text-muted">

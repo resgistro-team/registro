@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { Logo } from "@/components/Logo";
 import { signOut } from "@/lib/auth";
 import { useViewer } from "@/lib/use-viewer";
 
@@ -38,8 +39,8 @@ function NavBar({ overHero, children }: { overHero: boolean; children?: React.Re
       {children ?? (
         <nav aria-label="Main" className="mx-auto flex h-[4.5rem] w-full max-w-7xl items-center px-6 sm:px-10 lg:px-16">
           {overHero ? null : (
-            <Link href="/" className="font-display text-xl font-semibold tracking-[-0.03em] text-paper">
-              Registro
+            <Link href="/" aria-label="Registro home">
+              <Logo />
             </Link>
           )}
         </nav>
@@ -68,8 +69,12 @@ function NavContents({ overHero }: { overHero: boolean }) {
           // The hero itself is the wordmark, so the bar leaves room for it.
           <span />
         ) : (
-          <Link href="/" className="font-display text-xl font-semibold tracking-[-0.03em] text-paper">
-            Registro
+          <Link
+            href="/"
+            aria-label="Registro home"
+            className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper"
+          >
+            <Logo />
           </Link>
         )}
 
