@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/*
+ * One dark world, taken from the night side of the Earth in the hero.
+ * Ember is the colour of a city light and the only accent: it marks scarcity
+ * and nothing else. Actions are plain paper-white.
+ */
+:root {
+  color-scheme: dark;
+  --space: #020308;
+  --ink: #05070d;
+  --panel: #0b0f19;
+  --paper: #fbfaf8;
+  --muted: #8f95a3;
+  --line: #1c212d;
+  --ember: #ffc27a;
+}
+
+@theme inline {
+  --color-space: var(--space);
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-paper: var(--paper);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-ember: var(--ember);
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), "Trebuchet MS", ui-sans-serif, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-sans);
+}
+
+.typewriter-caret {
+  display: inline-block;
+  width: 0.08em;
+  height: 1em;
+  margin-left: 0.08em;
+  vertical-align: -0.12em;
+  background: currentColor;
+  animation: caret-blink 1.05s steps(1) infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Account screens: the form eases in when it swaps, so sign-in turns into sign-up instead of cutting. */
+.auth-swap {
+  animation: auth-swap 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes auth-swap {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* The cities behind the form drift, slower than anyone would notice moving. */
+.auth-drift {
+  animation: auth-drift 60s ease-in-out infinite alternate;
+  transform-origin: 62% 50%;
+}
+
+@keyframes auth-drift {
+  to {
+    transform: scale(1.08) translate(-1.5%, 0.8%);
+  }
+}
+
+.auth-spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: auth-spin 0.7s linear infinite;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .typewriter-caret {
+    display: none;
+  }
+
+  .auth-swap,
+  .auth-drift {
+    animation: none;
+  }
+
+  .auth-spinner {
+    animation-duration: 2s;
+  }
+}
