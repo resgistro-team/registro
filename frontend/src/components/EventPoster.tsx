@@ -67,7 +67,11 @@ export function EventPoster({
           ) : space ? (
             <span className={space.tone === "low" ? "font-semibold text-ember" : "font-semibold text-paper"}>{space.label}</span>
           ) : (
-            <span className="tabular-nums">{event.registration_count} going</span>
+            event.registration_count === 0 ? (
+              <span>Be the first</span>
+            ) : (
+              <span className="tabular-nums">{event.registration_count} going</span>
+            )
           )}
         </p>
       </div>
