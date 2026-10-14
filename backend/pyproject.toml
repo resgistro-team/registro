@@ -1,0 +1,16 @@
+# Deployment settings for Vercel. Local development still uses requirements.txt.
+[project]
+name = "registro-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg[binary]>=3.2,<4",
+    "psycopg-pool>=3.2,<4",
+    "python-dotenv>=1,<2",
+    "flask>=3.0,<4",
+    "flask-cors>=4.0,<7",
+]
+
+[tool.vercel]
+# app.py builds the app with create_app(); server.py holds the instance Vercel serves.
+entrypoint = "server:app"
