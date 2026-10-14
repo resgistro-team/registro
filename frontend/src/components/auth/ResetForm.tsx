@@ -52,7 +52,7 @@ export function ResetForm() {
           autoComplete="email"
           autoCapitalize="none"
           spellCheck={false}
-          placeholder="you@emich.edu"
+          placeholder="you@example.com"
           error={failure?.field === "email" ? failure.message : undefined}
           required
         />

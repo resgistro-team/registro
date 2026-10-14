@@ -2,14 +2,11 @@
 
 import type { RegistroEvent } from "@/lib/events";
 
-/** Campus name added to map searches, since rooms like "Room 201" mean nothing to a map on their own. */
-const CAMPUS = "Eastern Michigan University, Ypsilanti, MI";
-
 const pill =
   "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-[0.8rem] font-semibold text-paper/85 transition-colors hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper";
 
 export function mapUrl(location: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${location}, ${CAMPUS}`)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
 }
 
 function icsStamp(iso: string) {
@@ -34,7 +31,7 @@ function calendarFile(event: RegistroEvent, pageUrl: string) {
     `DTSTART:${icsStamp(event.start_datetime)}`,
     `DTEND:${icsStamp(event.end_datetime)}`,
     `SUMMARY:${icsText(event.title)}`,
-    `LOCATION:${icsText(`${event.location}, ${CAMPUS}`)}`,
+    `LOCATION:${icsText(event.location)}`,
     `DESCRIPTION:${icsText(`${event.description}\n\n${pageUrl}`)}`,
     `URL:${pageUrl}`,
     "END:VEVENT",

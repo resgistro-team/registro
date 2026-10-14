@@ -57,7 +57,7 @@ export interface Profile {
   profile_image: string | null;
 }
 
-/** Campus runs on Eastern time, whatever the visitor's own clock says. */
+/** Events are shown in Eastern time, whatever the visitor's own clock says. */
 export const CAMPUS_TIME_ZONE = "America/Detroit";
 
 const fmt = (options: Intl.DateTimeFormatOptions) =>

@@ -76,7 +76,7 @@ const DRAFTS: Draft[] = [
     hours: 2,
     capacity: 120,
     registered: 64,
-    organizer: "Campus Life",
+    organizer: "Open Stage Collective",
   },
   {
     id: "20000000-0000-4000-8000-000000000006",
