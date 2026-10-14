@@ -1,0 +1,12 @@
+# Never upload local settings or caches: __pycache__ can hold copies of real keys.
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+tests/
+check_*.py
+show_events.py
+database/

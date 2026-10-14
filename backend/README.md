@@ -95,3 +95,14 @@ The test connection is separate from DATABASE_URL. Without TEST_DATABASE_URL,
 tests are skipped rather than using the shared database by accident. Concurrent
 tests require full PostgreSQL; embedded PGlite is useful for sequential checks
 but is not evidence of real transaction concurrency.
+
+## Hosting
+
+The API runs on Vercel as the `registro-api` project: https://registro-api-eight.vercel.app
+
+- `pyproject.toml` tells Vercel to serve the `app` in `server.py`, on Python 3.12.
+- `vercel.json` pins it to Portland (`pdx1`), next to the Supabase database in us-west-2.
+- `.vercelignore` keeps `.env`, caches and tests out of the upload.
+- Environment variables are set in the Vercel project: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `DATABASE_POOL_MAX`.
+
+Deploy from this folder with `vercel deploy --prod`. On a Mac, run it locally with `PORT=5050 python server.py`, because AirPlay uses port 5000.

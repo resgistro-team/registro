@@ -14,7 +14,7 @@ Open http://localhost:3000. `npm run build` makes a production build, `npm run l
 
 Copy `.env.example` to `.env.local` and fill it in. With every value empty the site still runs: sample events, and sign-in in preview mode.
 
-To use real data, run the API too (`backend/`, see its README) and set `NEXT_PUBLIC_API_URL`. On a Mac, port 5000 is taken by AirPlay, so run the API with `PORT=5050` and point the frontend at `http://localhost:5050`.
+The live site uses the hosted API at https://registro-api-eight.vercel.app (set as `NEXT_PUBLIC_API_URL` in Vercel). To use real data locally, run the API too (`backend/`, see its README) and set `NEXT_PUBLIC_API_URL`. On a Mac, port 5000 is taken by AirPlay, so run the API with `PORT=5050` and point the frontend at `http://localhost:5050`.
 
 This Next.js version has breaking changes from older ones. Read `AGENTS.md` before writing code.
 
