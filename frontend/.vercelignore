@@ -1,0 +1,5 @@
+# Never upload local settings: they point at localhost and hold real keys.
+.env*
+!.env.example
+.next
+node_modules
