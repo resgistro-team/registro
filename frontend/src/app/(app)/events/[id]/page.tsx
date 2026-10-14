@@ -72,10 +72,7 @@ async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
                   <circle cx="12" cy="10" r="2.3" stroke="currentColor" strokeWidth="1.6" />
                 </svg>
               </span>
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="font-medium break-words">{event.location}</span>
-                <span className="text-sm text-muted">Eastern Michigan University</span>
-              </span>
+              <span className="min-w-0 flex-1 font-medium break-words">{event.location}</span>
               <OpenMap location={event.location} />
             </li>
           </ul>

@@ -22,7 +22,7 @@ const COPY = {
   },
   signup: {
     title: "Are you coming?",
-    lede: "Make an account and save your spot at anything on campus.",
+    lede: "Make an account and save your spot at anything happening.",
     submit: "Create account",
     pending: "Creating your account…",
     switchPrompt: "Already have an account?",
@@ -139,7 +139,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           autoComplete="email"
           autoCapitalize="none"
           spellCheck={false}
-          placeholder="you@emich.edu"
+          placeholder="you@example.com"
           error={fieldError("email")}
           required
         />

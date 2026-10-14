@@ -29,14 +29,14 @@ export default function Home({ searchParams }: PageProps<"/">) {
       <main id="wall" className="mx-auto w-full max-w-7xl flex-1 scroll-mt-20 px-6 pt-10 pb-20 sm:px-10 sm:pt-14 lg:px-16">
         <header className="mb-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex min-w-0 flex-col gap-3">
-            <h1 className="sr-only">Registro, everything happening on campus</h1>
+            <h1 className="sr-only">Registro, everything happening</h1>
             <Typewriter
               lines={LINES}
               active
               className="min-h-[3.05em] font-display text-[clamp(2.6rem,7vw,5.25rem)] leading-[0.98] font-semibold tracking-[-0.04em] text-balance sm:min-h-[2.05em]"
             />
             <p className="max-w-[46ch] text-[1.02rem] text-paper/70">
-              What&apos;s on around campus, from tonight on. Find something, save your spot, show up.
+              Concerts, workshops, games, meetups. Find one, save your spot, show up.
             </p>
           </div>
 

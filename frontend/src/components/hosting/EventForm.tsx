@@ -199,7 +199,7 @@ export function EventForm({ event, onSaved }: { event?: RegistroEvent; onSaved?:
           name="start"
           type="datetime-local"
           defaultValue={event ? isoToCampusInput(event.start_datetime) : undefined}
-          hint="Campus time (Eastern)."
+          hint="Eastern time."
           error={errors.start}
           required
         />
