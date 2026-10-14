@@ -66,17 +66,6 @@ body {
   }
 }
 
-/* The cities behind the form drift, slower than anyone would notice moving. */
-.auth-drift {
-  animation: auth-drift 60s ease-in-out infinite alternate;
-  transform-origin: 62% 50%;
-}
-
-@keyframes auth-drift {
-  to {
-    transform: scale(1.08) translate(-1.5%, 0.8%);
-  }
-}
 
 .auth-spinner {
   width: 1rem;
@@ -102,8 +91,7 @@ body {
     display: none;
   }
 
-  .auth-swap,
-  .auth-drift {
+  .auth-swap {
     animation: none;
   }
 
