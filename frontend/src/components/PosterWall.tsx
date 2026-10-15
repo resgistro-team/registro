@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { EventPoster } from "@/components/EventPoster";
+import { HostEventLink } from "@/components/HostEventLink";
 import { Notice, linkClass } from "@/components/Notice";
 import { listEvents } from "@/lib/api";
 import { windowFor, type TimeWindow } from "@/lib/campus-time";
@@ -84,9 +85,7 @@ export async function PosterWall({ filters: pending }: { filters: Promise<WallFi
                 Show everything
               </Link>
             ) : (
-              <Link href="/hosting/new" className={linkClass}>
-                Host something
-              </Link>
+              <HostEventLink className={linkClass}>Host something</HostEventLink>
             )
           }
         >

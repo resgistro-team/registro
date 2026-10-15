@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EventPoster } from "@/components/EventPoster";
 import { Notice, linkClass, primaryButton } from "@/components/Notice";
-import { apiConfigured, explain } from "@/lib/api";
+import { apiConfigured, explain, needsSignIn } from "@/lib/api";
 import type { MyEventItem, MyEvents } from "@/lib/events";
 import { useAuthedRequest } from "@/lib/use-viewer";
 
-type State = { status: "loading" } | { status: "failed"; message: string } | { status: "ready"; data: MyEvents };
+type State =
+  | { status: "loading" }
+  | { status: "failed"; message: string; signedOut: boolean }
+  | { status: "ready"; data: MyEvents };
 
 /**
  * What you're going to, then what you went to. A spot you gave up yourself is left out;
@@ -17,28 +20,48 @@ type State = { status: "loading" } | { status: "failed"; message: string } | { s
 export function MyEventsList() {
   const call = useAuthedRequest();
   const [state, setState] = useState<State>({ status: "loading" });
+  // Bumped by "Try again", which refetches in place instead of reloading the page.
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => {
+    setState({ status: "loading" });
+    setAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     if (!apiConfigured) return;
     let live = true;
     call<MyEvents>("/api/users/my-events")
       .then((data) => live && setState({ status: "ready", data }))
-      .catch((error) => live && setState({ status: "failed", message: explain(error) }));
+      .catch(
+        (error) =>
+          live && setState({ status: "failed", message: explain(error), signedOut: needsSignIn(error) }),
+      );
     return () => {
       live = false;
     };
-  }, [call]);
+  }, [call, attempt]);
 
   if (!apiConfigured) {
     return <Notice title="Not connected yet.">Your events show up here once the Registro API is connected.</Notice>;
   }
   if (state.status === "loading") return <ListSkeleton />;
   if (state.status === "failed") {
-    return (
+    return state.signedOut ? (
+      <Notice
+        title="You're signed out."
+        action={
+          <Link href={`/signin?next=${encodeURIComponent("/me")}`} className={primaryButton}>
+            Sign in
+          </Link>
+        }
+      >
+        {state.message}
+      </Notice>
+    ) : (
       <Notice
         title="Couldn't load your events."
         action={
-          <button type="button" className={linkClass} onClick={() => window.location.reload()}>
+          <button type="button" className={linkClass} onClick={retry}>
             Try again
           </button>
         }

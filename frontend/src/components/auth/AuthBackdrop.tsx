@@ -120,13 +120,18 @@ export function AuthBackdrop() {
       v.addEventListener("ended", advance);
     }
     load(a, order[0]);
-    load(b, order[1]);
     show(a, true);
     show(b, false);
     void a.play().catch(() => undefined);
 
+    // The second layer waits until the first can play, so arriving here costs
+    // one clip rather than two competing for the same connection.
+    const queueNext = () => load(b, order[1]);
+    a.addEventListener("canplay", queueNext, { once: true });
+
     return () => {
       window.clearTimeout(timer);
+      a.removeEventListener("canplay", queueNext);
       for (const v of [a, b]) {
         v.removeEventListener("timeupdate", onTime);
         v.removeEventListener("ended", advance);

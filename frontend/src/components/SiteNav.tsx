@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
 import { signOut } from "@/lib/auth";
@@ -51,6 +51,9 @@ function NavBar({ overHero, children }: { overHero: boolean; children?: React.Re
 
 function NavContents({ overHero }: { overHero: boolean }) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  // Sign-in sends people back to the view they were on, filters and all.
+  const here = search ? `${pathname}?${search}` : pathname;
   const router = useRouter();
   const viewer = useViewer();
   const signedIn = viewer.status === "signed-in";
@@ -94,7 +97,7 @@ function NavContents({ overHero }: { overHero: boolean }) {
           })}
 
           {viewer.status === "loading" ? (
-            <span className="h-10 w-20" aria-hidden="true" />
+            <span className="h-10 w-20 rounded-full bg-paper/10" aria-hidden="true" />
           ) : signedIn ? (
             <div className="flex items-center gap-2 pl-1 sm:pl-2">
               <span className="text-sm text-paper/75 max-md:hidden">Hey, {viewer.account.name}</span>
@@ -111,7 +114,7 @@ function NavContents({ overHero }: { overHero: boolean }) {
               </button>
             </div>
           ) : (
-            <Link href={`/signin?next=${encodeURIComponent(pathname)}`} className={pill}>
+            <Link href={`/signin?next=${encodeURIComponent(here)}`} className={pill}>
               Sign in
             </Link>
           )}
