@@ -47,6 +47,11 @@ export function explain(error: unknown): string {
   }
 }
 
+/** True when the only way forward is signing in again, not retrying. */
+export function needsSignIn(error: unknown): boolean {
+  return error instanceof ApiError && (error.code === "UNAUTHORIZED" || error.code === "USER_NOT_FOUND");
+}
+
 export interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;

@@ -5,40 +5,63 @@ import { useEffect, useState } from "react";
 import { Cover } from "@/components/Cover";
 import { ListSkeleton } from "@/components/me/MyEventsList";
 import { Notice, linkClass, primaryButton } from "@/components/Notice";
-import { apiConfigured, explain } from "@/lib/api";
+import { apiConfigured, explain, needsSignIn } from "@/lib/api";
 import { coverFor } from "@/lib/covers";
 import { eventDateParts, hasStarted, type RegistroEvent } from "@/lib/events";
 import { useAuthedRequest } from "@/lib/use-viewer";
 import { StatusLabel } from "./StatusLabel";
 
-type State = { status: "loading" } | { status: "failed"; message: string } | { status: "ready"; events: RegistroEvent[] };
+type State =
+  | { status: "loading" }
+  | { status: "failed"; message: string; signedOut: boolean }
+  | { status: "ready"; events: RegistroEvent[] };
 
 /** Your events in the order they happen, each with how full it is. Past and cancelled ones sink to the bottom. */
 export function HostingDashboard() {
   const call = useAuthedRequest();
   const [state, setState] = useState<State>({ status: "loading" });
+  // Bumped by "Try again", which refetches in place instead of reloading the page.
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => {
+    setState({ status: "loading" });
+    setAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     if (!apiConfigured) return;
     let live = true;
     call<RegistroEvent[]>("/api/events/organizer")
       .then((events) => live && setState({ status: "ready", events }))
-      .catch((error) => live && setState({ status: "failed", message: explain(error) }));
+      .catch(
+        (error) =>
+          live && setState({ status: "failed", message: explain(error), signedOut: needsSignIn(error) }),
+      );
     return () => {
       live = false;
     };
-  }, [call]);
+  }, [call, attempt]);
 
   if (!apiConfigured) {
     return <Notice title="Not connected yet.">Your events show up here once the Registro API is connected.</Notice>;
   }
   if (state.status === "loading") return <ListSkeleton rows={3} />;
   if (state.status === "failed") {
-    return (
+    return state.signedOut ? (
+      <Notice
+        title="You're signed out."
+        action={
+          <Link href={`/signin?next=${encodeURIComponent("/hosting")}`} className={primaryButton}>
+            Sign in
+          </Link>
+        }
+      >
+        {state.message}
+      </Notice>
+    ) : (
       <Notice
         title="Couldn't load your events."
         action={
-          <button type="button" className={linkClass} onClick={() => window.location.reload()}>
+          <button type="button" className={linkClass} onClick={retry}>
             Try again
           </button>
         }

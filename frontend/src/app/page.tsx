@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Suspense } from "react";
+import { HostEventLink } from "@/components/HostEventLink";
 import { quietButton } from "@/components/Notice";
 import { PosterWall, PosterWallFallback, type WallFilters } from "@/components/PosterWall";
 import { SiteNav } from "@/components/SiteNav";
@@ -53,9 +53,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
                 className="w-full min-w-0 rounded-full border border-line bg-panel px-5 py-3 text-[0.95rem] text-paper outline-none placeholder:text-muted/70 focus:border-paper/70 sm:w-72"
               />
             </form>
-            <Link href="/hosting/new" className={`${quietButton} shrink-0`}>
-              Host an event
-            </Link>
+            <HostEventLink className={`${quietButton} shrink-0`}>Host an event</HostEventLink>
           </div>
         </header>
 
