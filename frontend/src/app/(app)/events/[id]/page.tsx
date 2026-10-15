@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Cover } from "@/components/Cover";
+import { LightsLoading } from "@/components/LightsLoading";
 import { AddToCalendar, OpenMap } from "@/components/events/EventActions";
 import { RsvpPanel } from "@/components/events/RsvpPanel";
 import { getEvent } from "@/lib/api";
@@ -92,16 +93,5 @@ async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
 }
 
 function EventSkeleton() {
-  return (
-    <div aria-hidden="true" className="flex flex-col gap-10">
-      <div className="h-[24rem] rounded-[2rem] bg-paper/5" />
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
-        <div className="flex flex-col gap-6">
-          <div className="h-20 rounded-lg bg-paper/5" />
-          <div className="h-32 rounded-lg bg-paper/5" />
-        </div>
-        <div className="h-40 rounded-3xl bg-paper/5" />
-      </div>
-    </div>
-  );
+  return <LightsLoading label="Opening the doors" />;
 }

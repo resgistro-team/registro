@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { EventPoster } from "@/components/EventPoster";
 import { HostEventLink } from "@/components/HostEventLink";
+import { LightsLoading } from "@/components/LightsLoading";
 import { Notice, linkClass } from "@/components/Notice";
 import { listEvents } from "@/lib/api";
 import { windowFor, type TimeWindow } from "@/lib/campus-time";
@@ -131,17 +132,7 @@ function Chip({ label, href, active, quiet = false }: { label: string; href: str
   );
 }
 
-/** Holds the wall's shape while it loads, so the page does not jump. */
+/** The wall while its events load: the lights come on before the posters do. */
 export function PosterWallFallback() {
-  return (
-    <div aria-hidden="true" className="flex flex-col gap-8">
-      <div className="h-9 w-96 max-w-full rounded-full bg-paper/5" />
-      <div className="grid auto-rows-[17rem] grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-        <div className="rounded-3xl bg-paper/5 sm:col-span-2 sm:row-span-2" />
-        <div className="rounded-3xl bg-paper/5" />
-        <div className="rounded-3xl bg-paper/5" />
-        <div className="rounded-3xl bg-paper/5" />
-      </div>
-    </div>
-  );
+  return <LightsLoading label="Turning the lights on" />;
 }

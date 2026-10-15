@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FormAlert } from "@/components/auth/fields";
+import { LightsLoading } from "@/components/LightsLoading";
 import { Notice, linkClass, primaryButton, quietButton } from "@/components/Notice";
 import { apiConfigured, explain } from "@/lib/api";
 import { hasStarted, longDate, timeRange, type Attendee, type RegistroEvent } from "@/lib/events";
@@ -51,7 +52,7 @@ export function ManageEvent({ id }: { id: string }) {
 
   if (!apiConfigured) return <Notice title="Not connected yet.">Editing opens once the Registro API is connected.</Notice>;
   if (state.status === "loading") {
-    return <div aria-hidden="true" className="h-96 rounded-3xl bg-paper/5" />;
+    return <LightsLoading label="Opening your event" />;
   }
   if (state.status === "failed") {
     return (
