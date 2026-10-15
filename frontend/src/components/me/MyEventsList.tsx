@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EventPoster } from "@/components/EventPoster";
+import { LightsLoading } from "@/components/LightsLoading";
 import { Notice, linkClass, primaryButton } from "@/components/Notice";
 import { apiConfigured, explain, needsSignIn } from "@/lib/api";
 import type { MyEventItem, MyEvents } from "@/lib/events";
@@ -146,12 +147,6 @@ export function MyEventsList() {
   );
 }
 
-export function ListSkeleton({ rows = 3 }: { rows?: number }) {
-  return (
-    <div aria-hidden="true" className="grid auto-rows-[16rem] gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-      {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="rounded-3xl bg-paper/5" />
-      ))}
-    </div>
-  );
+export function ListSkeleton({ label = "Finding your events" }: { label?: string }) {
+  return <LightsLoading label={label} />;
 }

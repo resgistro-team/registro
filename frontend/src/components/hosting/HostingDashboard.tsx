@@ -44,7 +44,7 @@ export function HostingDashboard() {
   if (!apiConfigured) {
     return <Notice title="Not connected yet.">Your events show up here once the Registro API is connected.</Notice>;
   }
-  if (state.status === "loading") return <ListSkeleton rows={3} />;
+  if (state.status === "loading") return <ListSkeleton label="Gathering your events" />;
   if (state.status === "failed") {
     return state.signedOut ? (
       <Notice

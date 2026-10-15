@@ -10,11 +10,12 @@ import { useLinkStatus } from "next/link";
 export function LinkSpinner() {
   const { pending } = useLinkStatus();
   if (!pending) return null;
+  // The same activity indicator as every other loading state, at text size.
   return (
-    <span
-      role="status"
-      aria-label="Loading"
-      className="ml-1.5 inline-block size-3.5 shrink-0 animate-spin rounded-full border-2 border-current/25 border-t-current align-[-0.15em]"
-    />
+    <span role="status" aria-label="Loading" className="spinner spinner-inline ml-1.5 align-[-0.15em]">
+      {Array.from({ length: 8 }, (_, i) => (
+        <span key={i} style={{ transform: `rotate(${i * 45}deg)`, animationDelay: `${(i - 8) * 0.1}s` }} />
+      ))}
+    </span>
   );
 }
