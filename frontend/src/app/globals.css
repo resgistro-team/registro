@@ -183,3 +183,68 @@ html[data-navigating] main {
     opacity: 0;
   }
 }
+
+/* Ask Registro: the panel rises out of the corner, messages ease in, a soft dot breathes while it works. */
+.ask-panel {
+  transform-origin: bottom right;
+  animation: ask-rise 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ask-launcher {
+  animation: ask-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes ask-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+
+.ask-in {
+  animation: ask-in 0.36s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes ask-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.ask-orb {
+  box-shadow: 0 0 0 4px rgb(251 250 248 / 0.06), 0 0 28px rgb(251 250 248 / 0.25);
+}
+
+.ask-pulse {
+  animation: ask-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ask-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.ask-cards {
+  scrollbar-width: none;
+}
+
+.ask-cards::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-panel,
+  .ask-launcher,
+  .ask-in,
+  .ask-pulse {
+    animation: none;
+  }
+}
