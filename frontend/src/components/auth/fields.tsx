@@ -104,7 +104,7 @@ export function SubmitButton({ pending, children, pendingLabel }: { pending: boo
       type="submit"
       aria-busy={pending}
       aria-disabled={pending}
-      className="mt-1 flex w-full items-center justify-center gap-2.5 rounded-full bg-paper px-6 py-3.5 text-[0.98rem] font-semibold text-ink transition-[transform,opacity] duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper aria-busy:translate-y-0 aria-busy:opacity-80"
+      className="mt-1 flex w-full items-center justify-center gap-2.5 ticket bg-paper px-6 py-3.5 text-[0.98rem] font-semibold text-ink transition-[transform,opacity] duration-200 hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-ink aria-busy:translate-y-0 aria-busy:opacity-80"
     >
       {pending ? (
         <>

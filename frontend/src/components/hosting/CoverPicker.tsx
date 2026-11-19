@@ -58,7 +58,7 @@ export function CoverPicker({
       </div>
 
       {open ? (
-        <div id="cover-library" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel/60 p-3">
+        <div id="cover-library" className="flex flex-col gap-3">
           <div role="tablist" aria-label="Cover sets" className="flex flex-wrap gap-1.5">
             {SETS.map((s) => (
               <button

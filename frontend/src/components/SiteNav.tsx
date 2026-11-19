@@ -60,7 +60,7 @@ function NavContents({ overHero }: { overHero: boolean }) {
   const links = signedIn ? LINKS : LINKS.slice(0, 1);
 
   const pill =
-    "rounded-full border border-paper/25 bg-ink/40 px-4 py-2 text-sm font-medium text-paper/90 backdrop-blur-sm transition-colors hover:border-paper/60 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper";
+    "ticket border border-paper/25 bg-ink/40 px-4 py-2 text-sm font-medium text-paper/90 backdrop-blur-sm transition-colors hover:border-paper/60 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-paper";
 
   return (
     <NavBar overHero={overHero}>
@@ -89,7 +89,7 @@ function NavContents({ overHero }: { overHero: boolean }) {
                 key={link.href}
                 href={link.href}
                 aria-current={current ? "page" : undefined}
-                className="rounded-full px-3 py-2 text-sm font-medium text-paper/70 transition-colors hover:text-paper aria-[current=page]:text-paper max-sm:hidden"
+                className="ticket px-3.5 py-2 text-sm font-medium text-paper/65 transition-colors duration-200 hover:bg-paper/[0.04] hover:text-paper aria-[current=page]:bg-paper/[0.09] aria-[current=page]:text-paper max-sm:hidden"
               >
                 {link.label}
               </Link>
@@ -100,7 +100,7 @@ function NavContents({ overHero }: { overHero: boolean }) {
             <span className="h-10 w-20 rounded-full bg-paper/10" aria-hidden="true" />
           ) : signedIn ? (
             <div className="flex items-center gap-2 pl-1 sm:pl-2">
-              <span className="text-sm text-paper/75 max-md:hidden">Hey, {viewer.account.name}</span>
+              <span className="text-sm text-paper/75 max-md:hidden">Hey, {viewer.account.name.trim().split(/\s+/)[0]}</span>
               <button
                 type="button"
                 className={pill}
@@ -129,7 +129,7 @@ function NavContents({ overHero }: { overHero: boolean }) {
               key={link.href}
               href={link.href}
               aria-current={link.match(pathname) ? "page" : undefined}
-              className="rounded-full px-3 py-1.5 text-sm font-medium text-paper/65 aria-[current=page]:bg-paper/10 aria-[current=page]:text-paper"
+              className="ticket px-3 py-1.5 text-sm font-medium text-paper/65 aria-[current=page]:bg-paper/10 aria-[current=page]:text-paper"
             >
               {link.label}
             </Link>

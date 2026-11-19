@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { explain } from "@/lib/api";
 import { askRegistro, toolStatus, type FoundEvent, type Turn } from "@/lib/assistant";
 import { getAccessToken } from "@/lib/auth";
@@ -26,6 +26,33 @@ const SUGGESTIONS = [
 ];
 
 /** Pages where a chat button would get in the way: signing in, and the consent screen. */
+const SEEN_KEY = "registro.ask.seen";
+const SEEN_EVENT = "registro:ask-seen";
+
+function readSeen() {
+  try {
+    return window.localStorage.getItem(SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function subscribeSeen(onChange: () => void) {
+  window.addEventListener(SEEN_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(SEEN_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function markSeen() {
+  try {
+    window.localStorage.setItem(SEEN_KEY, "1");
+  } catch {}
+  window.dispatchEvent(new Event(SEEN_EVENT));
+}
+
 const HIDDEN = ["/signin", "/signup", "/reset", "/update-password", "/oauth", "/auth"];
 
 /**
@@ -38,15 +65,20 @@ export function AskRegistro() {
   // Once opened, the panel stays mounted while closed, so the conversation survives closing it
   // and moving between pages.
   const [started, setStarted] = useState(false);
+  // The label teaches what the button is. Once someone has used it, it shrinks to its mark and
+  // stops covering the page. Remembered per browser; if storage is blocked it just stays labelled.
+  const known = useSyncExternalStore(subscribeSeen, readSeen, () => false);
   const close = useCallback(() => setOpen(false), []);
   if (HIDDEN.some((path) => pathname.startsWith(path))) return null;
   return (
     <>
       {open ? null : (
         <Launcher
+          compact={known}
           onOpen={() => {
             setStarted(true);
             setOpen(true);
+            markSeen();
           }}
         />
       )}
@@ -55,15 +87,20 @@ export function AskRegistro() {
   );
 }
 
-function Launcher({ onOpen }: { onOpen: () => void }) {
+function Launcher({ onOpen, compact }: { onOpen: () => void; compact: boolean }) {
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="ask-launcher fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-40 flex h-12 items-center gap-2 rounded-full bg-paper pr-5 pl-3.5 text-sm font-semibold text-ink shadow-[0_12px_40px_-8px_rgba(0,0,0,0.7)] transition-transform duration-200 hover:scale-[1.04] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper active:scale-[0.98] sm:right-6 sm:bottom-6"
+      aria-label="Ask Registro"
+      title="Ask Registro"
+      className={`ask-launcher fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-40 flex h-12 items-center justify-center gap-2 rounded-full bg-paper text-sm font-semibold text-ink shadow-[0_12px_40px_-8px_rgba(0,0,0,0.7)] transition-[transform,padding] duration-200 hover:scale-[1.04] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper active:scale-[0.98] sm:right-6 sm:bottom-6 ${
+        compact ? "w-12" : "w-12 sm:w-auto sm:pr-5 sm:pl-3.5"
+      }`}
     >
       <Spark className="size-5" />
-      Ask Registro
+      {/* On a phone the button is always just its mark: a label there would sit on top of the page. */}
+      <span className={compact ? "sr-only" : "max-sm:sr-only"}>Ask Registro</span>
     </button>
   );
 }
@@ -165,7 +202,7 @@ function Panel({ open, onClose, here }: { open: boolean; onClose: () => void; he
       role="dialog"
       aria-label="Ask Registro"
       hidden={!open}
-      className="ask-panel fixed inset-x-2 bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))] z-50 flex h-[min(42rem,calc(100dvh-1rem))] flex-col overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-panel/80 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] backdrop-blur-2xl sm:inset-x-auto sm:right-6 sm:bottom-6 sm:h-[min(42rem,calc(100dvh-3rem))] sm:w-[26rem]"
+      className="ask-panel fixed inset-x-2 bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))] z-50 flex h-[min(42rem,calc(100dvh-1rem))] flex-col overflow-hidden edge edge-glass rounded-[1.75rem] shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] backdrop-blur-2xl sm:inset-x-auto sm:right-6 sm:bottom-6 sm:h-[min(42rem,calc(100dvh-3rem))] sm:w-[26rem]"
     >
       {/* A soft light behind the header, like the glow over a city at night. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_30%_0%,rgba(251,250,248,0.08),transparent)]" />
@@ -212,7 +249,7 @@ function Panel({ open, onClose, here }: { open: boolean; onClose: () => void; he
             send(draft);
           }}
         >
-          <div className="flex items-end gap-2 rounded-[1.35rem] border border-line bg-ink/70 py-1.5 pr-1.5 pl-4 transition-colors focus-within:border-paper/25">
+          <div className="flex items-end gap-2 edge edge-ink edge-hover rounded-[1.35rem] py-1.5 pr-1.5 pl-4">
             <label htmlFor="ask-input" className="sr-only">
               Ask Registro
             </label>
@@ -275,13 +312,13 @@ function Welcome({ name, onPick }: { name: string; onPick: (text: string) => voi
         <span className="text-muted">What are you up for?</span>
       </h3>
       <p className="mt-3 text-sm text-muted">Ask in your own words. I can find events, explain them, and save your spot.</p>
-      <ul className="mt-6 space-y-2">
+      <ul className="mt-5 divide-y divide-white/[0.07] border-y border-white/[0.07]">
         {SUGGESTIONS.map((suggestion) => (
           <li key={suggestion}>
             <button
               type="button"
               onClick={() => onPick(suggestion)}
-              className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-line bg-ink/50 px-4 py-3 text-left text-sm text-paper/90 transition-colors hover:border-paper/25 hover:bg-ink/80"
+              className="group flex w-full items-center justify-between gap-3 py-3.5 text-left text-[0.95rem] text-paper/80 transition-colors hover:text-paper"
             >
               {suggestion}
               <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-paper" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -361,7 +398,7 @@ function EventCard({ event, onOpen }: { event: FoundEvent; onOpen: () => void })
     <Link
       href={`/events/${event.event_id}`}
       onClick={onOpen}
-      className="flex h-full w-56 flex-col rounded-2xl border border-line bg-ink/70 p-4 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-paper/25"
+      className="flex h-full w-56 flex-col edge edge-ink edge-hover rounded-2xl p-4 transition-[transform,--edge-top] duration-300 hover:-translate-y-0.5"
     >
       {event.category ? <span className="text-[11px] font-medium tracking-[0.08em] text-muted uppercase">{event.category}</span> : null}
       <span className="mt-1 line-clamp-2 text-[15px] leading-snug font-medium text-paper">{event.title}</span>

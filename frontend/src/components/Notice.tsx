@@ -14,7 +14,7 @@ export function Notice({ title, children, action }: { title: string; children?: 
 export const linkClass = "font-semibold text-paper underline-offset-4 hover:underline";
 
 export const primaryButton =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-paper px-6 py-3 text-[0.95rem] font-semibold text-ink transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50";
+  "ticket inline-flex items-center justify-center gap-2 bg-paper px-6 py-3 text-[0.95rem] font-semibold text-ink transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-ink disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const quietButton =
-  "inline-flex items-center justify-center gap-2 rounded-full border border-line px-5 py-2.5 text-sm font-semibold text-paper/85 transition-colors hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper disabled:cursor-not-allowed disabled:opacity-50";
+  "ticket inline-flex items-center justify-center gap-2 border border-line px-5 py-2.5 text-sm font-semibold text-paper/85 transition-colors hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-paper disabled:cursor-not-allowed disabled:opacity-50";
