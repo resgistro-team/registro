@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseKey, supabaseUrl } from "./config";
 
 /** Pages that only make sense signed in. The API enforces access itself; this just routes people to sign-in first. */
-const SIGNED_IN_ONLY = ["/me", "/hosting"];
+// /oauth/consent: an assistant asking to connect needs to know whose account it is.
+const SIGNED_IN_ONLY = ["/me", "/hosting", "/oauth/consent"];
 
 /** Refreshes the visitor's session cookie on every request, so it never expires mid-visit. */
 export async function updateSession(request: NextRequest) {
