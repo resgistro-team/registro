@@ -11,6 +11,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from routes.auth import auth_bp
 from routes.events import events_bp
 from routes.users import users_bp
+from routes.assistant import assistant_bp
 
 
 def create_app():
@@ -28,6 +29,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(events_bp, url_prefix="/api/events")
     app.register_blueprint(users_bp, url_prefix="/api/users")
+    app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
 
     # Health check endpoint
     @app.route("/api/health", methods=["GET"])
