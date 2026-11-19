@@ -3,7 +3,7 @@
 import type { RegistroEvent } from "@/lib/events";
 
 const pill =
-  "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-[0.8rem] font-semibold text-paper/85 transition-colors hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper";
+  "inline-flex shrink-0 items-center gap-1.5 ticket border border-line px-3.5 py-1.5 text-[0.8rem] font-semibold text-paper/85 transition-colors hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper";
 
 export function mapUrl(location: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;

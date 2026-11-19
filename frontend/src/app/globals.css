@@ -38,6 +38,23 @@ body {
   font-family: var(--font-sans);
 }
 
+/*
+ * The sky behind every page: dusk blue overhead, the faintest warm horizon below, like a city
+ * seen at night. Atmosphere only. It never touches words or buttons, so paper still means
+ * "you can do this" and ember still means "running out".
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70rem 36rem at 12% -12%, rgb(64 86 178 / 0.2), transparent 70%),
+    radial-gradient(50rem 30rem at 92% -6%, rgb(110 84 190 / 0.1), transparent 70%),
+    radial-gradient(60rem 26rem at 70% 112%, rgb(255 194 122 / 0.045), transparent 70%);
+}
+
 .typewriter-caret {
   display: inline-block;
   width: 0.08em;
@@ -247,4 +264,194 @@ html[data-navigating] main {
   .ask-pulse {
     animation: none;
   }
+}
+
+
+/* Posters arrive one after another, soonest first, so the eye reads the wall in time order.
+   It replays when a filter changes: new results are news. */
+.rise {
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(min(var(--i, 0), 9) * 45ms);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+
+/* A small mark appearing once its answer is known (e.g. "You're going" after your plans load). */
+.mark-in {
+  animation: mark-in 0.35s ease-out both;
+}
+
+@keyframes mark-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+/* The one theatrical moment: saying yes. A ring draws, the check follows, the panel exhales. */
+.joined-check circle {
+  stroke-dasharray: 76;
+  stroke-dashoffset: 76;
+  animation: draw 0.5s 0.05s cubic-bezier(0.6, 0, 0.3, 1) forwards;
+}
+
+.joined-check path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw 0.3s 0.45s ease-out forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.joined-glow {
+  animation: joined-glow 1.2s 0.3s ease-out both;
+}
+
+@keyframes joined-glow {
+  from {
+    box-shadow: 0 0 0 0 rgb(251 250 248 / 0.28);
+  }
+  to {
+    box-shadow: 0 0 0 26px rgb(251 250 248 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .mark-in,
+  .joined-glow {
+    animation: none;
+  }
+  .joined-check circle,
+  .joined-check path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+ * Lit edges: Registro's border. A surface catches light along its top edge and fades toward a
+ * faint dusk blue at its foot, as if lit by the sky above the city. It separates layers through
+ * light instead of lines, so cards read as objects, not boxes. Hovering or focusing brightens the
+ * top edge: the surface leans toward you.
+ */
+@property --edge-top {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: rgb(255 255 255 / 0.15);
+}
+
+@layer components {
+  .edge {
+    --edge-fill: var(--panel);
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--edge-fill), var(--edge-fill)) padding-box,
+      linear-gradient(
+          168deg,
+          var(--edge-top),
+          rgb(255 255 255 / 0.045) 32%,
+          rgb(255 255 255 / 0.025) 66%,
+          rgb(132 156 255 / 0.13)
+        )
+        border-box;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.04),
+      0 24px 48px -32px rgb(0 0 0 / 0.9);
+    transition: --edge-top 0.3s ease;
+  }
+
+  /* Translucent fills for surfaces that float over photos or the sky. */
+  .edge-ink {
+    --edge-fill: rgb(5 7 13 / 0.62);
+  }
+
+  .edge-glass {
+    --edge-fill: rgb(11 15 25 / 0.84);
+  }
+
+  .edge-hover:hover,
+  .edge-hover:focus,
+  .edge-hover:focus-within {
+    --edge-top: rgb(255 255 255 / 0.34);
+  }
+
+  /* The same light on photo cards, drawn over the image so the picture can't hide it. */
+  .edge-img::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.2),
+      inset 0 0 0 1px rgb(255 255 255 / 0.06);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .edge-img:hover::after {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.36),
+      inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  }
+}
+
+/*
+ * Tickets: Registro's shape. Registering is getting in, so the things that get you in look like
+ * tickets: corners just rounded, a punched notch on each side. Nav, filters and the register
+ * button wear it small; event posters wear it as admission; "Next up" is a ticket with its stub.
+ */
+@layer components {
+  .ticket {
+    --notch: 4.5px;
+    --notch-y: 50%;
+    border-radius: 10px;
+    -webkit-mask:
+      radial-gradient(circle var(--notch) at 0 var(--notch-y), #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at 100% var(--notch-y), #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle var(--notch) at 0 var(--notch-y), #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at 100% var(--notch-y), #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) right / 51% 100% no-repeat;
+  }
+
+  .ticket-lg {
+    --notch: 12px;
+    --notch-y: 62%;
+  }
+
+  /* A ticket and its stub: notches top and bottom where it would tear, with a perforation between. */
+  .ticket-stub {
+    --notch: 7px;
+    --stub: calc(4.75rem + 0.5px);
+    -webkit-mask:
+      radial-gradient(circle var(--notch) at var(--stub) 0, #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--notch) at var(--stub) 100%, #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) bottom / 100% 51% no-repeat;
+    mask:
+      radial-gradient(circle var(--notch) at var(--stub) 0, #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--notch) at var(--stub) 100%, #0000 calc(var(--notch) - 0.5px), #000 var(--notch)) bottom / 100% 51% no-repeat;
+  }
+
+  .perforation {
+    background-image: linear-gradient(rgb(255 255 255 / 0.22) 55%, transparent 0);
+    background-size: 1px 7px;
+    background-repeat: repeat-y;
+  }
+}
+
+/* Posters are masked into tickets, which would clip a box-shadow, so the lift's shadow lives on the slot. */
+.poster-slot {
+  transition: filter 0.3s ease;
+}
+
+.poster-slot:hover {
+  filter: drop-shadow(0 22px 26px rgb(0 0 0 / 0.55));
 }

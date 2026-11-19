@@ -93,12 +93,12 @@ export async function PosterWall({ filters: pending }: { filters: Promise<WallFi
           {filtered ? "Try another day or another word." : "Be the first to put something on."}
         </Notice>
       ) : (
-        <ul className="grid auto-rows-[17rem] grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-          <li className={rest.length > 0 ? "sm:col-span-2 sm:row-span-2" : "sm:col-span-2"}>
+        <ul className="grid auto-rows-[14.5rem] grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+          <li className={`rise poster-slot ${rest.length > 0 ? "sm:col-span-2 sm:row-span-2" : "sm:col-span-2"}`}>
             <EventPoster event={first} featured />
           </li>
-          {rest.map((event) => (
-            <li key={event.event_id}>
+          {rest.map((event, index) => (
+            <li key={event.event_id} className="rise poster-slot" style={{ "--i": index + 1 } as React.CSSProperties}>
               <EventPoster event={event} />
             </li>
           ))}
@@ -123,7 +123,7 @@ function Chip({ label, href, active, quiet = false }: { label: string; href: str
       href={href}
       scroll={false}
       aria-current={active ? "true" : undefined}
-      className={`rounded-full border px-4 py-1.5 text-sm transition-colors aria-[current=true]:border-paper aria-[current=true]:bg-paper aria-[current=true]:font-semibold aria-[current=true]:text-ink ${
+      className={`ticket border px-4 py-1.5 text-sm transition-[color,background-color,border-color,transform] duration-200 active:scale-95 aria-[current=true]:border-paper aria-[current=true]:bg-paper aria-[current=true]:font-semibold aria-[current=true]:text-ink ${
         quiet ? "border-line/70 text-paper/60 hover:text-paper" : "border-line text-paper/80 hover:border-paper/50 hover:text-paper"
       }`}
     >

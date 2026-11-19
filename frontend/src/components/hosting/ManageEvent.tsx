@@ -142,7 +142,7 @@ export function ManageEvent({ id }: { id: string }) {
         </section>
 
         <div className="flex flex-col gap-8 lg:sticky lg:top-28 lg:self-start">
-          <section aria-labelledby="visibility-heading" className="flex flex-col gap-4 rounded-3xl border border-line bg-ink/60 p-6">
+          <section aria-labelledby="visibility-heading" className="flex flex-col gap-4 border-t border-line pt-5">
             <h2 id="visibility-heading" className="text-sm font-semibold tracking-[0.12em] text-muted uppercase">
               Who can see it
             </h2>

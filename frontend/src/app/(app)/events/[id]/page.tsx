@@ -38,11 +38,12 @@ async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(2_3_8/0.15)_20%,rgb(2_3_8/0.6)_60%,rgb(2_3_8/0.95)_100%)]" />
         <Link
           href="/#wall"
-          className="absolute top-5 left-6 rounded-full bg-ink/55 px-3.5 py-1.5 text-sm font-medium text-paper/90 backdrop-blur-sm transition-colors hover:text-paper sm:left-8"
+          className="absolute top-5 left-6 ticket bg-ink/55 px-3.5 py-1.5 text-sm font-medium text-paper/90 backdrop-blur-sm transition-colors hover:text-paper sm:left-8"
         >
           ← All events
         </Link>
-        <div className="flex flex-col gap-3 px-6 pb-7 sm:px-10 sm:pb-9">
+        {/* On a wide screen the decision panel rides up over the cover's foot, so the title leaves it room. */}
+        <div className="flex flex-col gap-3 px-6 pb-7 sm:px-10 sm:pb-9 lg:pr-[27rem]">
           <span className="text-xs font-semibold tracking-[0.14em] text-paper/80 uppercase">
             {event.category ? `${event.category} · ` : ""}Hosted by {event.organizer_name}
           </span>
@@ -56,9 +57,9 @@ async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
         <div className="flex min-w-0 flex-col gap-8">
           <ul className="flex flex-col">
             <li className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-line pb-5">
-              <span className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl border border-line bg-panel leading-none">
+              <span className="flex w-12 shrink-0 flex-col items-center leading-none">
                 <span className="text-[0.62rem] font-bold tracking-[0.12em] text-muted uppercase">{date.weekday}</span>
-                <span className="mt-1 font-display text-xl font-semibold tabular-nums">{date.day}</span>
+                <span className="mt-1 font-display text-[1.7rem] font-semibold tabular-nums">{date.day}</span>
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="font-medium">{longDate(event.start_datetime)}</span>
@@ -67,8 +68,8 @@ async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
               <AddToCalendar event={event} />
             </li>
             <li className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-line py-5">
-              <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-line bg-panel">
-                <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-paper/80">
+              <span aria-hidden="true" className="flex w-12 shrink-0 items-center justify-center">
+                <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-paper/80">
                   <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0113 0c0 5.4-6.5 11-6.5 11z" stroke="currentColor" strokeWidth="1.6" />
                   <circle cx="12" cy="10" r="2.3" stroke="currentColor" strokeWidth="1.6" />
                 </svg>
@@ -84,7 +85,8 @@ async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
         </div>
 
         {/* On a phone the decision comes straight after the cover; on a wide screen it rides alongside. */}
-        <div className="order-first lg:sticky lg:top-28 lg:order-none lg:self-start">
+        {/* Pulled up over the cover so "Register" is on screen without scrolling, even on a laptop. */}
+        <div className="rise relative z-10 order-first lg:sticky lg:top-28 lg:order-none lg:-mt-52 lg:mr-8 lg:self-start">
           <RsvpPanel initial={event} sample={sample} />
         </div>
       </div>

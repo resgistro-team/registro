@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Dark where the form is, open where the action is. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(2_3_8/0.94)_0%,rgb(2_3_8/0.84)_38%,rgb(2_3_8/0.45)_72%,rgb(2_3_8/0.32)_100%)] max-md:bg-[linear-gradient(180deg,rgb(2_3_8/0.3)_0%,rgb(2_3_8/0.78)_40%,rgb(2_3_8/0.92)_100%)]"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(2_3_8/0.96)_0%,rgb(2_3_8/0.88)_36%,rgb(2_3_8/0.45)_70%,rgb(2_3_8/0.28)_100%)] max-md:bg-[linear-gradient(180deg,rgb(2_3_8/0.3)_0%,rgb(2_3_8/0.78)_40%,rgb(2_3_8/0.92)_100%)]"
       />
 
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 pt-6 sm:px-10 lg:px-16">
@@ -34,7 +34,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 items-center px-6 py-12 sm:px-10 lg:px-16">
-        <div className="w-full max-w-[26rem] rounded-3xl border border-line/70 bg-ink/55 p-7 backdrop-blur-md sm:p-9">
+        {/* No card: the form stands in the night itself. The scrim behind does the legibility work. */}
+        <div className="w-full max-w-[24rem]">
           {children}
         </div>
       </main>

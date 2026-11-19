@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Cover } from "@/components/Cover";
+import { YoureGoing } from "@/components/plans/YoureGoing";
 import { coverFor } from "@/lib/covers";
 import { availability, eventDateParts, type RegistroEvent } from "@/lib/events";
 
@@ -31,7 +32,7 @@ export function EventPoster({
   return (
     <Link
       href={href}
-      className={`group relative isolate flex h-full min-h-[15rem] flex-col justify-end overflow-hidden rounded-3xl bg-panel outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper ${muted ? "opacity-55 saturate-50" : ""}`}
+      className={`group relative isolate flex h-full min-h-[13rem] flex-col justify-end overflow-hidden edge-img ticket ticket-lg rounded-3xl bg-panel outline-none transition-transform duration-300 ease-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-paper active:translate-y-0 active:scale-[0.99] motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${muted ? "opacity-55 saturate-50" : ""}`}
     >
       <Cover
         url={cover.url}
@@ -43,7 +44,7 @@ export function EventPoster({
       <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(2_3_8/0.05)_25%,rgb(2_3_8/0.55)_60%,rgb(2_3_8/0.92)_100%)]" />
 
       <span className="absolute top-4 left-4 flex flex-col items-center rounded-xl bg-paper px-2.5 py-1.5 leading-none text-ink shadow-[0_6px_20px_rgb(0_0_0/0.25)]">
-        <span className="text-[0.62rem] font-bold tracking-[0.12em] uppercase">{date.weekday}</span>
+        <span className="text-[0.62rem] font-bold tracking-[0.12em] uppercase">{date.label}</span>
         <span className="mt-1 font-display text-xl font-semibold tracking-tight tabular-nums">{date.day}</span>
       </span>
       {event.category ? (
@@ -61,17 +62,19 @@ export function EventPoster({
         <p className="text-sm break-words text-paper/80">
           {date.time} · {event.location}
         </p>
-        <p className="text-[0.8rem] text-paper/75">
+        {/* One line that only speaks when it has news: you're going, it's nearly full, or people are in.
+            A zero would read as "nobody wants this", and a line that never changes teaches people to skip it. */}
+        <p className="min-h-[1.2em] text-[0.8rem] text-paper/75">
           {note !== undefined ? (
             note
-          ) : space ? (
-            <span className={space.tone === "low" ? "font-semibold text-ember" : "font-semibold text-paper"}>{space.label}</span>
           ) : (
-            event.registration_count === 0 ? (
-              <span>Be the first</span>
-            ) : (
-              <span className="tabular-nums">{event.registration_count} going</span>
-            )
+            <YoureGoing eventId={event.event_id}>
+              {space ? (
+                <span className={space.tone === "low" ? "font-semibold text-ember" : "font-semibold text-paper"}>{space.label}</span>
+              ) : event.registration_count > 0 ? (
+                <span className="tabular-nums">{event.registration_count} going</span>
+              ) : null}
+            </YoureGoing>
           )}
         </p>
       </div>
