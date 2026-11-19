@@ -347,21 +347,24 @@ html[data-navigating] main {
 @property --edge-top {
   syntax: "<color>";
   inherits: false;
-  initial-value: rgb(255 255 255 / 0.15);
+  initial-value: rgb(255 255 255 / 0.26);
 }
 
 @layer components {
   .edge {
-    --edge-fill: var(--panel);
+    /* A raised surface is a step lighter than the page and keeps a visible rim all the way round,
+       so it never sinks into the night behind it, whatever sits there. */
+    --edge-fill: #121827;
     border: 1px solid transparent;
     background:
+      linear-gradient(rgb(255 255 255 / 0.035), transparent 60%) padding-box,
       linear-gradient(var(--edge-fill), var(--edge-fill)) padding-box,
       linear-gradient(
           168deg,
           var(--edge-top),
-          rgb(255 255 255 / 0.045) 32%,
-          rgb(255 255 255 / 0.025) 66%,
-          rgb(132 156 255 / 0.13)
+          rgb(255 255 255 / 0.11) 32%,
+          rgb(255 255 255 / 0.08) 66%,
+          rgb(132 156 255 / 0.24)
         )
         border-box;
     box-shadow:
@@ -372,17 +375,17 @@ html[data-navigating] main {
 
   /* Translucent fills for surfaces that float over photos or the sky. */
   .edge-ink {
-    --edge-fill: rgb(5 7 13 / 0.62);
+    --edge-fill: rgb(14 19 31 / 0.78);
   }
 
   .edge-glass {
-    --edge-fill: rgb(11 15 25 / 0.84);
+    --edge-fill: rgb(18 24 39 / 0.9);
   }
 
   .edge-hover:hover,
   .edge-hover:focus,
   .edge-hover:focus-within {
-    --edge-top: rgb(255 255 255 / 0.34);
+    --edge-top: rgb(255 255 255 / 0.46);
   }
 
   /* The same light on photo cards, drawn over the image so the picture can't hide it. */
@@ -450,6 +453,11 @@ html[data-navigating] main {
 /* Posters are masked into tickets, which would clip a box-shadow, so the lift's shadow lives on the slot. */
 .poster-slot {
   transition: filter 0.3s ease;
+}
+
+/* Same for anything else cut into a ticket: the shadow that lifts it off the page sits outside the mask. */
+.lifted {
+  filter: drop-shadow(0 14px 22px rgb(0 0 0 / 0.55));
 }
 
 .poster-slot:hover {

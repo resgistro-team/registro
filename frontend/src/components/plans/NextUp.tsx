@@ -27,7 +27,7 @@ export function NextUp() {
   const when = date.relative ?? `${date.weekday} ${date.month} ${date.day}`;
 
   return (
-    <section aria-label="Your next event" className="ask-in mb-8">
+    <section aria-label="Your next event" className="ask-in lifted mb-8 w-fit max-w-full">
       {/* The whole strip opens the event; "+N more" sits above that link and goes to My events. */}
       {/* Sized to what it says, not stretched across the page: it's a reminder, not a banner. */}
       <div className="ticket-stub group relative flex w-fit max-w-full items-center gap-3 edge edge-glass edge-hover rounded-[1.4rem] p-2 pr-3 backdrop-blur-sm transition-[transform,--edge-top] duration-300 hover:-translate-y-0.5">
