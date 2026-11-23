@@ -29,7 +29,7 @@ HOSTS = {
     "pickup": "Pickup Sports Crew",
 }
 
-# (host, title, category, location, days from today, start "HH:MM", hours, capacity, (cover set, index), description)
+# (host, title, category, location, days from today (or "saturday" for the next one), start "HH:MM", hours, capacity, (cover set, index), description)
 EVENTS = [
     ("open-stage", "Open Mic Night", "Music", "The Back Room, Ann Arbor", 0, "20:00", 2.5, 80, ("music", 0),
      "Poetry, music and comedy. Sign up at the door to perform, or just come listen. Doors at 7:45."),
@@ -39,7 +39,7 @@ EVENTS = [
      "Three short talks from people who put AI features in front of real users, then pizza and questions."),
     ("asa", "Jollof Wars", "Culture", "McKenny Hall Ballroom, Ypsilanti", 2, "18:00", 3, 150, ("culture", 0),
      "Ghana, Nigeria, Senegal and more go head to head. Taste every pot, then vote for the best jollof."),
-    ("ypsi-run", "Saturday Morning Run Club", "Sports", "Riverside Park, Ypsilanti", 3, "09:00", 1.5, None, ("social", 2),
+    ("ypsi-run", "Saturday Morning Run Club", "Sports", "Riverside Park, Ypsilanti", "saturday", "09:00", 1.5, None, ("social", 2),
      "Easy 5K along the river, every pace welcome. Coffee after for anyone who wants it."),
     ("dyp", "Rooftop Social: Fall Edition", "Social", "Corktown Rooftop, Detroit", 3, "19:00", 4, 60, ("social", 0),
      "Music, food trucks and the skyline. Come solo, leave with friends."),
@@ -62,6 +62,8 @@ def add():
     today = datetime.now(EASTERN).date()
     hosts = {slug: repo.get_or_create_user(email_for(slug), name)["user_id"] for slug, name in HOSTS.items()}
     for host, title, category, location, days, start, hours, capacity, cover_set, description in EVENTS:
+        if days == "saturday":  # A title that names a day has to land on it.
+            days = (5 - today.weekday()) % 7
         day = today + timedelta(days=days)
         h, m = map(int, start.split(":"))
         begins = datetime(day.year, day.month, day.day, h, m, tzinfo=EASTERN)
